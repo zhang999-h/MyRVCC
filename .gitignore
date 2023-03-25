@@ -18,8 +18,8 @@ a.out
 # 第三方程序
 /thirdparty
 
-# 生成的最终的rvcc可执行文件
-/rvcc
+# 生成的最终的MyRVCC可执行文件
+/MyRVCC
 
 # 测试生成的可执行文件
 /test/*.exe
