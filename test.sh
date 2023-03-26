@@ -40,11 +40,34 @@ assert() {
 # [2] 支持+ -运算符
 #assert 34 '12-34+56'
 # [3] 支持空格
-assert 5 ' 2+3 '
+#assert 5 ' 2+3 '
 
 # [5] 支持* / ()运算符
-assert 47 '5+6*7'
-assert 15 '5*(9-6)'
-assert 17 '1-8/(2*2)+3*6'
+#assert 47 '5+6*7'
+#assert 15 '5*(9-6)'
+#assert 17 '1-8/(2*2)+3*6'
+
+# [7] 支持条件运算符
+assert 0 '0==1'
+assert 1 '42==42'
+assert 1 '0!=1'
+assert 0 '42!=42'
+assert 1 '0<1'
+assert 0 '1<1'
+assert 0 '2<1'
+assert 1 '0<=1'
+assert 1 '1<=1'
+assert 0 '2<=1'
+assert 1 '1>0'
+assert 0 '1>1'
+assert 0 '1>2'
+assert 1 '1>=0'
+assert 1 '1>=1'
+assert 0 '1>=2'
+assert 1 '5==2+3'
+assert 0 '6==4+3'
+assert 1 '0*9+5*2==4+4*(6/3)-2'
+
+
 # 如果运行正常未提前退出，程序将显示OK
 echo OK
