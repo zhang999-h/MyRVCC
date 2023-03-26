@@ -25,7 +25,7 @@ struct Token
 // 输出错误信息
 // static文件内可以访问的函数
 // Fmt为传入的字符串， ... 为可变参数，表示Fmt后面所有的参数
-static void error(char *Fmt, ...)
+static void error(const char *Fmt, ...)
 {
   // 定义一个va_list变量
   va_list VA;
@@ -41,7 +41,7 @@ static void error(char *Fmt, ...)
   exit(1);
 }
 
-static bool equal(Token *tok, char *str)
+static bool equal(Token *tok,const char *str)
 {
   if (memcmp(tok->Loc, str, tok->Len) == 0 && strlen(str) == tok->Len)
   {
@@ -64,7 +64,7 @@ Token *newToken(TokenKind kind, char *Start, char *End)
 }
 
 // 判断Str是否以SubStr开头
-static bool startsWith(char *Str, char *SubStr)
+static bool startsWith(char *Str,const char *SubStr)
 {
   // 比较LHS和RHS的N个字符是否相等
   return strncmp(Str, SubStr, strlen(SubStr)) == 0;
@@ -137,7 +137,7 @@ static int getNumber(Token *tok)
 }
 
 // 跳过指定的Str
-static Token *skip(Token *Tok, char *Str)
+static Token *skip(Token *Tok, const char *Str)
 {
   if (!equal(Tok, Str))
     error("expect '%s'", Str);
@@ -392,7 +392,7 @@ static void push(void)
 }
 
 // 弹栈，将sp指向的地址的值，弹出到a1
-static void pop(char *Reg)
+static void pop(const char *Reg)
 {
   printf("  ld %s, 0(sp)\n", Reg);
   printf("  addi sp, sp, 8\n");
