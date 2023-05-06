@@ -44,6 +44,13 @@ static Node *newBinary(NodeKind Kind, Node *LHS, Node *RHS)
   return Nd;
 }
 
+// 新建一个单叉树
+static Node *newUnary(NodeKind Kind, Node *Expr) {
+  Node *Nd = newNode(Kind);
+  Nd->LHS = Expr;
+  return Nd;
+}
+
 // 新建一个数字节点
 static Node *newNum(int Val)
 {
@@ -51,7 +58,9 @@ static Node *newNum(int Val)
   Nd->Val = Val;
   return Nd;
 }
-
+// program = stmt*
+// stmt = exprStmt
+// exprStmt = expr ";"
 // expr = equality
 // equality = relational ("==" relational | "!=" relational)*
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
@@ -59,12 +68,27 @@ static Node *newNum(int Val)
 // expr = mul ("+" mul | "-" mul)*
 // mul = primary ("*" primary | "/" primary)*
 // primary = "(" expr ")" | num
+static Node *exprStmt(Token **Rest, Token *Tok);
 static Node *expr(Token **Rest, Token *Tok);
 static Node *equality(Token **Rest, Token *Tok);
 static Node *relational(Token **Rest, Token *Tok);
 static Node *add(Token **Rest, Token *Tok);
 static Node *mul(Token **Rest, Token *Tok);
 static Node *primary(Token **Rest, Token *Tok);
+
+// 解析语句
+// stmt = exprStmt
+static Node *stmt(Token **Rest, Token *Tok) { return exprStmt(Rest, Tok); }
+
+// 解析表达式语句
+// exprStmt = expr ";"
+static Node *exprStmt(Token **Rest, Token *Tok) {
+  Node *Nd = newUnary(ND_EXPR_STMT, expr(&Tok, Tok));
+  *Rest = skip(Tok, ";");
+  return Nd;
+}
+
+
 
 // 解析表达式
 // expr = equality
@@ -230,9 +254,15 @@ static Node *primary(Token **Rest, Token *Tok)
 
 
 // 语法解析入口函数
+// program = stmt*
 Node *parse(Token *Tok) {
-  Node *Nd = expr(&Tok, Tok);
-  if (Tok->Kind != TK_EOF)
-    error("extra token");
-  return Nd;
+   // 这里使用了和词法分析类似的单向链表结构
+  Node Head = {};
+  Node *Cur = &Head;
+  // stmt*
+  while (Tok->Kind != TK_EOF) {
+    Cur->Next = stmt(&Tok, Tok);
+    Cur = Cur->Next;
+  }
+  return Head.Next;
 }

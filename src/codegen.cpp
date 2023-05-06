@@ -91,6 +91,18 @@ static void genExpr(Node *Nd)
     error("invalid expression");
 }
 
+// 生成语句
+static void genStmt(Node *Nd)
+{
+    if (Nd->Kind == ND_EXPR_STMT)
+    {
+        genExpr(Nd->LHS);
+        return;
+    }
+
+    error("invalid statement");
+}
+
 // 代码生成入口函数，包含代码块的基础信息
 void codegen(Node *Nd)
 {
@@ -99,8 +111,13 @@ void codegen(Node *Nd)
     // main段标签
     printf("main:\n");
 
-    genExpr(Nd);
-
+    // genExpr(Nd);
+    // 循环遍历所有的语句
+    for (Node *N = Nd; N; N = N->Next)
+    {
+        genStmt(N);
+        // assert(Depth == 0);
+    }
     // ret为jalr x0, x1, 0别名指令，用于返回子程序
     // 返回的为a0的值
     printf("  ret\n");

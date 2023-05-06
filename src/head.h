@@ -41,12 +41,14 @@ typedef enum
   ND_LT,  // <
   ND_LE,  // <=
   ND_NUM, // 整形
+  ND_EXPR_STMT, // 表达式语句
 } NodeKind;
 
 // AST中二叉树节点
 typedef struct Node Node;
 struct Node
 {
+  Node *Next;    // 下一节点，指代下一语句
   NodeKind Kind; // 节点种类
   Node *LHS;     // 左部，left-hand side
   Node *RHS;     // 右部，right-hand side
