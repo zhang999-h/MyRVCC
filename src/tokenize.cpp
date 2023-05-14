@@ -1,4 +1,4 @@
-#include"head.h"
+#include "head.h"
 
 Token *newToken(TokenKind kind, char *Start, char *End)
 {
@@ -11,7 +11,7 @@ Token *newToken(TokenKind kind, char *Start, char *End)
 }
 
 // 判断Str是否以SubStr开头
-static bool startsWith(char *Str,const char *SubStr)
+static bool startsWith(char *Str, const char *SubStr)
 {
   // 比较LHS和RHS的N个字符是否相等
   return strncmp(Str, SubStr, strlen(SubStr)) == 0;
@@ -56,7 +56,14 @@ Token *tokenize(char *P)
       Cur->Len = P - OldPtr;
       continue;
     }
-
+    // 解析标记符
+    if ('a' <= *P && *P <= 'z')
+    {
+      Cur->Next = newToken(TK_IDENT, P, P + 1);
+      Cur = Cur->Next;
+      ++P;
+      continue;
+    }
     int PunctLen = readPunct(P);
     if (PunctLen)
     {

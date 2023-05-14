@@ -12,6 +12,7 @@
 // 为每个终结符都设置种类来表示
 typedef enum
 {
+  TK_IDENT, // 标记符，可以为变量名、函数名等
   TK_PUNCT, // 操作符如： + -
   TK_NUM,   // 数字
   TK_EOF,   // 文件终止符，即文件的最后
@@ -31,17 +32,19 @@ struct Token
 // AST的节点种类
 typedef enum
 {
-  ND_ADD, // +
-  ND_SUB, // -
-  ND_MUL, // *
-  ND_DIV, // /
-  ND_NEG, // 负号-
-  ND_EQ,  // ==
-  ND_NE,  // !=
-  ND_LT,  // <
-  ND_LE,  // <=
-  ND_NUM, // 整形
+  ND_ADD,       // +
+  ND_SUB,       // -
+  ND_MUL,       // *
+  ND_DIV,       // /
+  ND_NEG,       // 负号-
+  ND_EQ,        // ==
+  ND_NE,        // !=
+  ND_LT,        // <
+  ND_LE,        // <=
+  ND_NUM,       // 整形
   ND_EXPR_STMT, // 表达式语句
+  ND_ASSIGN,    // 赋值
+  ND_VAR,       // 变量
 } NodeKind;
 
 // AST中二叉树节点
@@ -52,12 +55,11 @@ struct Node
   NodeKind Kind; // 节点种类
   Node *LHS;     // 左部，left-hand side
   Node *RHS;     // 右部，right-hand side
+  char Name;     // 存储ND_VAR的字符串
   int Val;       // 存储ND_NUM种类的值
 };
 
-
 void error(const char *Fmt, ...);
-
 
 // 词法分析
 Token *tokenize(char *P);
@@ -67,6 +69,5 @@ Node *parse(Token *Tok);
 
 // 代码生成入口函数
 void codegen(Node *Nd);
-
 
 #endif
