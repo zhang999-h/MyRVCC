@@ -1,6 +1,8 @@
 #ifndef ALL_HEAD_H
 #define ALL_HEAD_H
-
+// 使用POSIX.1标准
+// 使用了strndup函数
+#define _POSIX_C_SOURCE 200809L
 //
 // 共用头文件，定义了多个文件间共同使用的函数和数据
 //
@@ -29,6 +31,25 @@ struct Token
   int Len;        // 长度
 };
 
+
+typedef struct Node Node;
+
+// 本地变量
+typedef struct Obj Obj;
+struct Obj {
+  Obj *Next;  // 指向下一对象
+  char *Name; // 变量名
+  int Offset; // fp的偏移量
+};
+
+// 函数
+typedef struct Function Function;
+struct Function {
+  Node *Body;    // 函数体
+  Obj *Locals;   // 本地变量
+  int StackSize; // 栈大小
+};
+
 // AST的节点种类
 typedef enum
 {
@@ -48,14 +69,14 @@ typedef enum
 } NodeKind;
 
 // AST中二叉树节点
-typedef struct Node Node;
 struct Node
 {
   Node *Next;    // 下一节点，指代下一语句
   NodeKind Kind; // 节点种类
   Node *LHS;     // 左部，left-hand side
   Node *RHS;     // 右部，right-hand side
-  char Name;     // 存储ND_VAR的字符串
+  //char Name;     // 存储ND_VAR的字符串
+  Obj *Var;      // 存储ND_VAR种类的变量
   int Val;       // 存储ND_NUM种类的值
 };
 
@@ -65,9 +86,9 @@ void error(const char *Fmt, ...);
 Token *tokenize(char *P);
 
 // 语法解析入口函数
-Node *parse(Token *Tok);
+Function  *parse(Token *Tok);
 
 // 代码生成入口函数
-void codegen(Node *Nd);
+void codegen(Function *Prog);
 
 #endif
