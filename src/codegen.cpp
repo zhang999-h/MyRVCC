@@ -86,7 +86,29 @@ static void genExpr(Node *Nd)
         // 访问a0地址中存储的数据，存入到a0当中
         printf("  ld a0, 0(a0)\n");
         return;
+    // // 赋值
+    // case ND_ASSIGN:
+    //     // 左部是左值，保存值到的地址
+    //     genAddr(Nd->LHS);
+    //     push();
+    //     // 右部是右值，为表达式的值
+    //     genExpr(Nd->RHS);
+    //     pop("a1");
+    //     printf("  sd a0, 0(a1)\n");
+        //因为赋值操作有一个返回值，所以需要一个语句，这就是为什么不用下面的递归
+        //return;
+    default:
+        break;
+    }
+/*******************************************
+
+           * 特殊的非叶子结点
+
+ *******************************************/
+    switch (Nd->Kind)
+    {
     // 赋值
+    //因为变量操作会返回值而不是地址，所以需要一个语句，这就是为什么不用下面的递归
     case ND_ASSIGN:
         // 左部是左值，保存值到的地址
         genAddr(Nd->LHS);
@@ -99,6 +121,11 @@ static void genExpr(Node *Nd)
     default:
         break;
     }
+/*******************************************
+
+           * 非叶子结点
+
+ *******************************************/
     // 右子树保存在a1,左子树在a0
     //  递归到最右节点
     genExpr(Nd->RHS);
@@ -150,6 +177,9 @@ static void genExpr(Node *Nd)
         printf("  slt a0, a1, a0\n");
         printf("  xori a0, a0, 1\n");
         return;
+    // 赋值
+    case ND_ASSIGN:
+        printf("  sd a1, 0(a0)\n");
     default:
         break;
     }
