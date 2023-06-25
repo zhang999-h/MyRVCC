@@ -42,6 +42,15 @@ static bool isIdent2(char C)
 {
   return isIdent1(C) || ('0' <= C && C <= '9');
 }
+
+// 将名为“return”的终结符转为KEYWORD
+static void convertKeywords(Token *Tok) {
+  for (Token *T = Tok; T->Kind != TK_EOF; T = T->Next) {
+    if (equal(T, "return"))
+      T->Kind = TK_KEYWORD;
+  }
+}
+
 Token *tokenize(char *P)
 {
   Token *Head = new Token();
@@ -69,6 +78,7 @@ Token *tokenize(char *P)
       Cur->Len = P - OldPtr;
       continue;
     }
+    // 解析标记符或关键字
     // [a-zA-Z_][a-zA-Z0-9_]*
     if (isIdent1(*P)) {
       char *Start = P;

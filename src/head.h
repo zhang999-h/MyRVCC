@@ -18,6 +18,7 @@ typedef enum
   TK_PUNCT, // 操作符如： + -
   TK_NUM,   // 数字
   TK_EOF,   // 文件终止符，即文件的最后
+  TK_KEYWORD, // 关键字
 } TokenKind;
 
 // 终结符结构体
@@ -66,6 +67,7 @@ typedef enum
   ND_EXPR_STMT, // 表达式语句
   ND_ASSIGN,    // 赋值
   ND_VAR,       // 变量
+  ND_RETURN,    // 返回
 } NodeKind;
 
 // AST中二叉树节点
@@ -81,6 +83,8 @@ struct Node
 };
 
 void error(const char *Fmt, ...);
+
+bool equal(Token *tok, const char *str);
 
 // 词法分析
 Token *tokenize(char *P);

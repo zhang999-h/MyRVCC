@@ -95,20 +95,20 @@ static void genExpr(Node *Nd)
     //     genExpr(Nd->RHS);
     //     pop("a1");
     //     printf("  sd a0, 0(a1)\n");
-        //因为赋值操作有一个返回值，所以需要一个语句，这就是为什么不用下面的递归
-        //return;
+    // 因为赋值操作有一个返回值，所以需要一个语句，这就是为什么不用下面的递归
+    // return;
     default:
         break;
     }
-/*******************************************
+    /*******************************************
 
-           * 特殊的非叶子结点
+               * 特殊的非叶子结点
 
- *******************************************/
+     *******************************************/
     switch (Nd->Kind)
     {
     // 赋值
-    //因为变量操作会返回值而不是地址，所以需要一个语句，这就是为什么不用下面的递归
+    // 因为变量操作会返回值而不是地址，所以需要一个语句，这就是为什么不用下面的递归
     case ND_ASSIGN:
         // 左部是左值，保存值到的地址
         genAddr(Nd->LHS);
@@ -121,11 +121,11 @@ static void genExpr(Node *Nd)
     default:
         break;
     }
-/*******************************************
+    /*******************************************
 
-           * 非叶子结点
+               * 非叶子结点
 
- *******************************************/
+     *******************************************/
     // 右子树保存在a1,左子树在a0
     //  递归到最右节点
     genExpr(Nd->RHS);
@@ -190,10 +190,21 @@ static void genExpr(Node *Nd)
 // 生成语句
 static void genStmt(Node *Nd)
 {
-    if (Nd->Kind == ND_EXPR_STMT)
+    switch (Nd->Kind)
     {
+    // 生成return语句
+    case ND_RETURN:
+        genExpr(Nd->LHS);
+        // 无条件跳转语句，跳转到.L.return段
+        // j offset是 jal x0, offset的别名指令
+        printf("  j .L.return\n");
+        return;
+    // 生成表达式语句
+    case ND_EXPR_STMT:
         genExpr(Nd->LHS);
         return;
+    default:
+        break;
     }
 
     error("invalid statement");
@@ -236,6 +247,8 @@ void codegen(Function *Prog)
     }
 
     // Epilogue，后语
+    // 输出return段标签
+    printf(".L.return:\n");
     // 将fp的值改写回sp
     printf("  mv sp, fp\n");
     // 将最早fp保存的值弹栈，恢复fp。

@@ -2,7 +2,7 @@
 // 在解析时，全部的变量实例都被累加到这个列表里。
 Obj *Locals;
 
-static bool equal(Token *tok, const char *str)
+bool equal(Token *tok, const char *str)
 {
   if (memcmp(tok->Loc, str, tok->Len) == 0 && strlen(str) == tok->Len)
   {
@@ -92,7 +92,7 @@ static Obj *newLVar(char *Name) {
 
 
 // program = stmt*
-// stmt = exprStmt
+// stmt = "return" expr ";" | exprStmt
 // exprStmt = expr ";"
 // expr = assign
 // assign = equality ("=" assign)?
@@ -114,9 +114,18 @@ static Node *assign(Token **Rest, Token *Tok);
 
 
 // 解析语句
-// stmt = exprStmt
-static Node *stmt(Token **Rest, Token *Tok) { return exprStmt(Rest, Tok); }
+// stmt = "return" expr ";" | exprStmt
+static Node *stmt(Token **Rest, Token *Tok) {
+  // "return" expr ";"
+  if (equal(Tok, "return")) {
+    Node *Nd = newUnary(ND_RETURN, expr(&Tok, Tok->Next));
+    *Rest = skip(Tok, ";");
+    return Nd;
+  }
 
+  // exprStmt
+  return exprStmt(Rest, Tok);
+}
 // 解析表达式语句
 // exprStmt = expr ";"
 static Node *exprStmt(Token **Rest, Token *Tok)
