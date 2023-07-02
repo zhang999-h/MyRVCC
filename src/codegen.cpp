@@ -203,6 +203,11 @@ static void genStmt(Node *Nd)
     case ND_EXPR_STMT:
         genExpr(Nd->LHS);
         return;
+        // 生成代码块，遍历代码块的语句链表
+    case ND_BLOCK:
+        for (Node *N = Nd->Body; N; N = N->Next)
+            genStmt(N);
+        return;
     default:
         break;
     }
@@ -238,13 +243,10 @@ void codegen(Function *Prog)
     // 偏移量为实际变量所用的栈大小
     printf("  addi sp, sp, -%d\n", Prog->StackSize);
 
-    // genExpr(Nd);
-    // 循环遍历所有的语句
-    for (Node *N = Prog->Body; N; N = N->Next)
-    {
-        genStmt(N);
-        // assert(Depth == 0);
-    }
+    // 生成语句链表的代码
+    genStmt(Prog->Body);
+
+    // assert(Depth == 0);
 
     // Epilogue，后语
     // 输出return段标签

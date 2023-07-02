@@ -68,6 +68,7 @@ typedef enum
   ND_ASSIGN,    // 赋值
   ND_VAR,       // 变量
   ND_RETURN,    // 返回
+  ND_BLOCK,     // { ... }，代码块
 } NodeKind;
 
 // AST中二叉树节点
@@ -80,6 +81,8 @@ struct Node
   //char Name;     // 存储ND_VAR的字符串
   Obj *Var;      // 存储ND_VAR种类的变量
   int Val;       // 存储ND_NUM种类的值
+  // 代码块
+  Node *Body;
 };
 
 void error(const char *Fmt, ...);
