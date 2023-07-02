@@ -69,6 +69,7 @@ typedef enum
   ND_VAR,       // 变量
   ND_RETURN,    // 返回
   ND_BLOCK,     // { ... }，代码块
+  ND_IF,        // "if"，条件判断
 } NodeKind;
 
 // AST中二叉树节点
@@ -83,6 +84,10 @@ struct Node
   int Val;       // 存储ND_NUM种类的值
   // 代码块
   Node *Body;
+   // "if"语句
+  Node *Cond; // 条件内的表达式
+  Node *Then; // 符合条件后的语句
+  Node *Els;  // 不符合条件后的语句
 };
 
 void error(const char *Fmt, ...);

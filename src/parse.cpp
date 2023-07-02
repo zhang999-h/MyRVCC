@@ -93,8 +93,10 @@ static Obj *newLVar(char *Name)
 
 // program = compoundStmt
 // compoundStmt = "{" stmt* "}"
-// stmt = "return" expr ";" | compoundStmt | exprStmt
-// exprStmt = expr? ";"
+// stmt = "return" expr ";"
+//        | "if" "(" expr ")" stmt ("else" stmt)?
+//        | "{" compoundStmt
+//        | exprStmt// exprStmt = expr? ";"
 // expr = assign
 // assign = equality ("=" assign)?
 // equality = relational ("==" relational | "!=" relational)*
@@ -114,7 +116,10 @@ static Node *assign(Token **Rest, Token *Tok);
 static Node *compoundStmt(Token **Rest, Token *Tok);
 
 // 解析语句
-// stmt = "return" expr ";" | compoundStmt | exprStmt
+// stmt = "return" expr ";"
+//        | "if" "(" expr ")" stmt ("else" stmt)?
+//        | "{" compoundStmt
+//        | exprStmt
 static Node *stmt(Token **Rest, Token *Tok)
 {
   // "return" expr ";"
@@ -127,6 +132,24 @@ static Node *stmt(Token **Rest, Token *Tok)
   // "{" compoundStmt
   if (equal(Tok, "{"))
     return compoundStmt(Rest, Tok);
+  // 解析if语句
+  // "if" "(" expr ")" stmt ("else" stmt)?
+  if (equal(Tok, "if"))
+  {
+    Node *Nd = newNode(ND_IF);
+    // "(" expr ")"，条件内语句
+    Tok = skip(Tok->Next, "(");
+    Nd->Cond = expr(&Tok, Tok);
+    Tok = skip(Tok, ")");
+    // stmt，符合条件后的语句
+    Nd->Then = stmt(&Tok, Tok);
+    // ("else" stmt)?，不符合条件后的语句
+    if (equal(Tok, "else"))
+      Nd->Els = stmt(&Tok, Tok->Next);
+    *Rest = Tok;
+    return Nd;
+  }
+
   // exprStmt
   return exprStmt(Rest, Tok);
 }
@@ -136,7 +159,7 @@ static Node *stmt(Token **Rest, Token *Tok)
 static Node *compoundStmt(Token **Rest, Token *Tok)
 {
   Tok = skip(Tok, "{");
-  
+
   // 这里使用了和词法分析类似的单向链表结构
   Node Head = {};
   Node *Cur = &Head;
@@ -159,7 +182,8 @@ static Node *compoundStmt(Token **Rest, Token *Tok)
 static Node *exprStmt(Token **Rest, Token *Tok)
 {
   // ";"
-  if (equal(Tok, ";")) {
+  if (equal(Tok, ";"))
+  {
     *Rest = Tok->Next;
     return newNode(ND_BLOCK);
   }
@@ -361,7 +385,7 @@ static Node *primary(Token **Rest, Token *Tok)
 Function *parse(Token *Tok)
 {
   // "{"
-  
+
   // 函数体存储语句的AST，Locals存储变量
   Function *Prog = (Function *)calloc(1, sizeof(Function));
   Prog->Body = compoundStmt(&Tok, Tok);
