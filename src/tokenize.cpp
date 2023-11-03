@@ -44,12 +44,14 @@ static bool isIdent2(char C)
 }
 
 // 判断是否为关键字
-static bool isKeyword(Token *Tok) {
+static bool isKeyword(Token *Tok)
+{
   // 关键字列表
-  const char *Kw[] = {"return", "if", "else"};
+  const char *Kw[] = {"return", "if", "else", "for"};
 
   // 遍历关键字列表匹配
-  for (int I = 0; I < sizeof(Kw) / sizeof(*Kw); ++I) {
+  for (int I = 0; I < sizeof(Kw) / sizeof(*Kw); ++I)
+  {
     if (equal(Tok, Kw[I]))
       return true;
   }
@@ -57,10 +59,11 @@ static bool isKeyword(Token *Tok) {
   return false;
 }
 
-
 // 将名为“return”的终结符转为KEYWORD
-static void convertKeywords(Token *Tok) {
-  for (Token *T = Tok; T->Kind != TK_EOF; T = T->Next) {
+static void convertKeywords(Token *Tok)
+{
+  for (Token *T = Tok; T->Kind != TK_EOF; T = T->Next)
+  {
     if (isKeyword(T))
       T->Kind = TK_KEYWORD;
   }
@@ -95,9 +98,11 @@ Token *tokenize(char *P)
     }
     // 解析标记符或关键字
     // [a-zA-Z_][a-zA-Z0-9_]*
-    if (isIdent1(*P)) {
+    if (isIdent1(*P))
+    {
       char *Start = P;
-      do {
+      do
+      {
         ++P;
       } while (isIdent2(*P));
       Cur->Next = newToken(TK_IDENT, Start, P);

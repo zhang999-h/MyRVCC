@@ -14,10 +14,10 @@
 // 为每个终结符都设置种类来表示
 typedef enum
 {
-  TK_IDENT, // 标记符，可以为变量名、函数名等
-  TK_PUNCT, // 操作符如： + -
-  TK_NUM,   // 数字
-  TK_EOF,   // 文件终止符，即文件的最后
+  TK_IDENT,   // 标记符，可以为变量名、函数名等
+  TK_PUNCT,   // 操作符如： + -
+  TK_NUM,     // 数字
+  TK_EOF,     // 文件终止符，即文件的最后
   TK_KEYWORD, // 关键字
 } TokenKind;
 
@@ -32,12 +32,12 @@ struct Token
   int Len;        // 长度
 };
 
-
 typedef struct Node Node;
 
 // 本地变量
 typedef struct Obj Obj;
-struct Obj {
+struct Obj
+{
   Obj *Next;  // 指向下一对象
   char *Name; // 变量名
   int Offset; // fp的偏移量
@@ -45,7 +45,8 @@ struct Obj {
 
 // 函数
 typedef struct Function Function;
-struct Function {
+struct Function
+{
   Node *Body;    // 函数体
   Obj *Locals;   // 本地变量
   int StackSize; // 栈大小
@@ -68,8 +69,9 @@ typedef enum
   ND_ASSIGN,    // 赋值
   ND_VAR,       // 变量
   ND_RETURN,    // 返回
-  ND_BLOCK,     // { ... }，代码块
+  ND_BLOCK,     // { ... }，代码for块
   ND_IF,        // "if"，条件判断
+  ND_FOR        // "for"
 } NodeKind;
 
 // AST中二叉树节点
@@ -79,15 +81,20 @@ struct Node
   NodeKind Kind; // 节点种类
   Node *LHS;     // 左部，left-hand side
   Node *RHS;     // 右部，right-hand side
-  //char Name;     // 存储ND_VAR的字符串
-  Obj *Var;      // 存储ND_VAR种类的变量
-  int Val;       // 存储ND_NUM种类的值
+  // char Name;     // 存储ND_VAR的字符串
+  Obj *Var; // 存储ND_VAR种类的变量
+  int Val;  // 存储ND_NUM种类的值
   // 代码块
   Node *Body;
-   // "if"语句
+  // "if"语句
+  // "if"语句 或者 "for"语句
   Node *Cond; // 条件内的表达式
-  Node *Then; // 符合条件后的语句
+  Node *Then; // 符合条件后的语句，for语句的代码块也在Then中
   Node *Els;  // 不符合条件后的语句
+  Node *Init; // 初始化语句for的初始化语句
+  Node *Inc;  // 递增语句for的递增
+
+  Token *Tok; // 节点对应的终结符
 };
 
 void error(const char *Fmt, ...);
@@ -98,7 +105,7 @@ bool equal(Token *tok, const char *str);
 Token *tokenize(char *P);
 
 // 语法解析入口函数
-Function  *parse(Token *Tok);
+Function *parse(Token *Tok);
 
 // 代码生成入口函数
 void codegen(Function *Prog);

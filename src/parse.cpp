@@ -95,8 +95,10 @@ static Obj *newLVar(char *Name)
 // compoundStmt = "{" stmt* "}"
 // stmt = "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt)?
+//        | "for" "(" exprStmt expr? ";" expr? ")" stmt
 //        | "{" compoundStmt
-//        | exprStmt// exprStmt = expr? ";"
+//        | exprStmt
+// exprStmt = expr? ";"
 // expr = assign
 // assign = equality ("=" assign)?
 // equality = relational ("==" relational | "!=" relational)*
@@ -118,6 +120,7 @@ static Node *compoundStmt(Token **Rest, Token *Tok);
 // 解析语句
 // stmt = "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt)?
+//        | "for" "(" exprStmt expr? ";" expr? ")" stmt
 //        | "{" compoundStmt
 //        | exprStmt
 static Node *stmt(Token **Rest, Token *Tok)
@@ -149,7 +152,25 @@ static Node *stmt(Token **Rest, Token *Tok)
     *Rest = Tok;
     return Nd;
   }
+  // "for" "(" exprStmt expr? ";" expr? ")" stmt
+  if (equal(Tok, "for"))
+  {
+    Node *Nd = newNode(ND_FOR);
+    Tok = skip(Tok->Next, "(");
 
+    Nd->Init = exprStmt(&Tok, Tok);
+
+    if (!equal(Tok, ";"))
+      Nd->Cond = expr(&Tok, Tok);
+    Tok = skip(Tok, ";");
+    if (!equal(Tok, ")"))
+      Nd->Inc = expr(&Tok, Tok);
+    Tok = skip(Tok, ")");
+
+    Nd->Then = stmt(Rest, Tok);
+    //*Rest=Tok;
+    return Nd;
+  }
   // exprStmt
   return exprStmt(Rest, Tok);
 }
