@@ -71,7 +71,7 @@ typedef enum
   ND_RETURN,    // 返回
   ND_BLOCK,     // { ... }，代码for块
   ND_IF,        // "if"，条件判断
-  ND_FOR        // "for"
+  ND_FOR        // "for"或者"while"
 } NodeKind;
 
 // AST中二叉树节点
