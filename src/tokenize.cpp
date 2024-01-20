@@ -1,5 +1,7 @@
 #include "head.h"
 
+char *CurrentInput;
+
 Token *newToken(TokenKind kind, char *Start, char *End)
 {
   Token *token = (Token *)malloc(sizeof(Token));
@@ -71,6 +73,7 @@ static void convertKeywords(Token *Tok)
 
 Token *tokenize(char *P)
 {
+  CurrentInput = P;
   Token *Head = new Token();
   Token *Cur = Head;
   while (*P)

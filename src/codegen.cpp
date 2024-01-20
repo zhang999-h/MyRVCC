@@ -58,7 +58,7 @@ static void genAddr(Node *Nd)
         return;
     }
 
-    error("not an lvalue");
+    errorTok(Nd->Tok, "not an lvalue");
 }
 // 根据变量的链表计算出偏移量
 static void assignLVarOffsets(Function *Prog)
@@ -205,7 +205,7 @@ static void genExpr(Node *Nd)
         break;
     }
 
-    error("invalid expression");
+    errorTok(Nd->Tok, "invalid expression");
 }
 
 // 生成语句
@@ -307,7 +307,7 @@ static void genStmt(Node *Nd)
         break;
     }
 
-    error("invalid statement");
+    errorTok(Nd->Tok, "invalid statement");
 }
 
 // 代码生成入口函数，包含代码块的基础信息

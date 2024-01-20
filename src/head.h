@@ -11,6 +11,9 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <string.h>
+
+extern char *CurrentInput;//用来存储输入
+
 // 为每个终结符都设置种类来表示
 typedef enum
 {
@@ -79,8 +82,10 @@ struct Node
 {
   Node *Next;    // 下一节点，指代下一语句
   NodeKind Kind; // 节点种类
-  Node *LHS;     // 左部，left-hand side
-  Node *RHS;     // 右部，right-hand side
+  
+
+  Node *LHS; // 左部，left-hand side
+  Node *RHS; // 右部，right-hand side
   // char Name;     // 存储ND_VAR的字符串
   Obj *Var; // 存储ND_VAR种类的变量
   int Val;  // 存储ND_NUM种类的值
@@ -98,6 +103,8 @@ struct Node
 };
 
 void error(const char *Fmt, ...);
+void errorTok(Token *Tok, char *Fmt, ...) ;
+
 
 bool equal(Token *tok, const char *str);
 
