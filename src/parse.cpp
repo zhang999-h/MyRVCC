@@ -107,7 +107,8 @@ static Obj *newLVar(char *Name)
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 // add = mul ("+" mul | "-" mul)*
 // expr = mul ("+" mul | "-" mul)*
-// mul = primary ("*" primary | "/" primary)*
+// mul = unary ("*" unary | "/" unary)*
+// unary = ("+" | "-" | "*" | "&") unary | primary
 // primary = "(" expr ")" | ident|num
 static Node *exprStmt(Token **Rest, Token *Tok);
 static Node *expr(Token **Rest, Token *Tok);
@@ -115,6 +116,7 @@ static Node *equality(Token **Rest, Token *Tok);
 static Node *relational(Token **Rest, Token *Tok);
 static Node *add(Token **Rest, Token *Tok);
 static Node *mul(Token **Rest, Token *Tok);
+static Node *unary(Token **Rest, Token *Tok);
 static Node *primary(Token **Rest, Token *Tok);
 static Node *assign(Token **Rest, Token *Tok);
 static Node *compoundStmt(Token **Rest, Token *Tok);
@@ -366,27 +368,27 @@ static Node *add(Token **Rest, Token *Tok)
 }
 
 // 解析乘除
-// mul = primary ("*" primary | "/" primary)*
+// mul = unary ("*" unary | "/" unary)*
 static Node *mul(Token **Rest, Token *Tok)
 {
-  // primary
-  Node *Nd = primary(&Tok, Tok);
+  // unary
+  Node *Nd = unary(&Tok, Tok);
 
-  // ("*" primary | "/" primary)*
+  // ("*" unary | "/" unary)*
   while (true)
   {
     Token *Start = Tok;
-    // "*" primary
+    // "*" unary
     if (equal(Tok, "*"))
     {
-      Nd = newBinary(ND_MUL, Nd, primary(&Tok, Tok->Next), Start);
+      Nd = newBinary(ND_MUL, Nd, unary(&Tok, Tok->Next), Start);
       continue;
     }
 
-    // "/" primary
+    // "/" unary
     if (equal(Tok, "/"))
     {
-      Nd = newBinary(ND_DIV, Nd, primary(&Tok, Tok->Next), Start);
+      Nd = newBinary(ND_DIV, Nd, unary(&Tok, Tok->Next), Start);
       continue;
     }
 
@@ -395,6 +397,27 @@ static Node *mul(Token **Rest, Token *Tok)
   }
 }
 
+// unary = ("+" | "-" | "*" | "&") unary | primary
+static Node *unary(Token **Rest, Token *Tok)
+{
+  // "+" unary
+  if (equal(Tok, "+"))
+    return unary(Rest, Tok->Next);
+  // "-" unary
+  if (equal(Tok, "-"))
+    return newUnary(ND_NEG, unary(Rest, Tok->Next), Tok);
+
+  // "&" unary
+  if (equal(Tok, "&"))
+    return newUnary(ND_ADDR, unary(Rest, Tok->Next), Tok);
+
+  // "*" unary
+  if (equal(Tok, "*"))
+    return newUnary(ND_DEREF, unary(Rest, Tok->Next), Tok);
+
+  // primary
+  return primary(Rest, Tok);
+}
 // 解析括号、数字、变量
 // primary = "(" expr ")" | ident|num
 static Node *primary(Token **Rest, Token *Tok)

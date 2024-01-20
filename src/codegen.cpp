@@ -2,6 +2,7 @@
 //
 // 语义分析与代码生成
 //
+static void genExpr(Node *Nd);
 
 // 记录栈深度
 static int Depth;
@@ -45,7 +46,10 @@ static int alignTo(int N, int Align)
 // 如果报错，说明节点不在内存中
 static void genAddr(Node *Nd)
 {
-    if (Nd->Kind == ND_VAR)
+    switch (Nd->Kind)
+    {
+    // 变量
+    case ND_VAR:
     {
         // // 偏移量=是两个字母在ASCII码表中的距离加1后乘以8，*8表示每个变量需要八个字节单位的内存
         // int Offset = (Nd->Name - 'a' + 1) * 8;
@@ -57,7 +61,13 @@ static void genAddr(Node *Nd)
 
         return;
     }
-
+        // 解引用*  //当如*y作为左值时
+    case ND_DEREF:
+        genExpr(Nd->LHS);
+        return;
+    default:
+        break;
+    }
     errorTok(Nd->Tok, "not an lvalue");
 }
 // 根据变量的链表计算出偏移量
@@ -99,6 +109,17 @@ static void genExpr(Node *Nd)
         // 访问a0地址中存储的数据，存入到a0当中
         printf("  # 读取a0中存放的地址，得到的值存入a0\n");
         printf("  ld a0, 0(a0)\n");
+        return;
+        // 解引用
+    case ND_DEREF://解引用理解起来难，实现简单，如*y ：现在y中其实是地址，只需要再把地址做一次寻址操作就行了
+        genExpr(Nd->LHS);
+        //只需要再把地址做一次寻址操作就行了
+        printf("  # 读取a0中存放的地址，得到的值存入a0\n");
+        printf("  ld a0, 0(a0)\n");
+        return;
+    // 取地址
+    case ND_ADDR:
+        genAddr(Nd->LHS);
         return;
     // // 赋值
     // case ND_ASSIGN:

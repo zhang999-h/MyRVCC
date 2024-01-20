@@ -9,14 +9,14 @@ assert() {
 
   # 运行程序，传入期待值，将生成结果写入tmp.s汇编文件。
   # 如果运行不成功，则会执行exit退出。成功时会短路exit操作
-  ./build/MyRVCC "$input" > tmp.s || exit
+  ./build/MyRVCC "$input" > rvcc.s || exit
   # 编译rvcc产生的汇编文件
   #gcc -o tmp tmp.s
-   $RISCV/bin/riscv64-unknown-linux-gnu-gcc -static -o tmp tmp.s
+   $RISCV/bin/riscv64-unknown-linux-gnu-gcc -static -o rvcc rvcc.s
 
   # 运行生成出来目标文件
   #./tmp
-   qemu-riscv64 -L $RISCV/sysroot ./tmp
+   qemu-riscv64 -L $RISCV/sysroot ./rvcc
   # $RISCV/bin/spike --isa=rv64gc $RISCV/riscv64-unknown-linux-gnu/bin/pk ./tmp
 
   # 获取程序返回值，存入 实际值
@@ -30,7 +30,9 @@ assert() {
     exit 1
   fi
 }
-
+  cd build
+  make
+  cd ..
 
 # assert 期待值 输入值
 # [1] 返回指定数值
@@ -46,6 +48,13 @@ assert() {
 #assert 47 '5+6*7'
 #assert 15 '5*(9-6)'
 #assert 17 '1-8/(2*2)+3*6'
+
+
+# [6] 支持一元运算的+ -
+assert 10 '{ return -10+20; }'
+assert 10 '{ return - -10; }'
+assert 10 '{ return - - +10; }'
+assert 48 '{ return ------12*+++++----++++++++++4; }'
 
 # [7] 支持条件运算符
 assert 0 '{0==1;}'
@@ -106,5 +115,16 @@ assert 3 '{ for (;;) {return 3;} return 5; }'
 
 # [17] 支持while语句 复用了FOR的节点 
 assert 10 '{ i=0; while(i<10) { i=i+1; } return i; }'
+
+
+# [20] 支持一元& *运算符
+assert 3 '{ x=3; return *&x; }'
+assert 3 '{ x=3; y=&x; z=&y; return **z; }'
+assert 5 '{ x=3; y=5; return *(&x+8); }'
+assert 3 '{ x=3; y=5; return *(&y-8); }'
+assert 5 '{ x=3; y=&x; *y=5; return x; }'
+assert 7 '{ x=3; y=5; *(&x+8)=7; return y; }'
+assert 7 '{ x=3; y=5; *(&y-8)=7; return x; }'
+assert 8 '{ x=3; y=&x;  x=*y+5; return x; }'
 
 echo OK

@@ -12,7 +12,7 @@
 #include <ctype.h>
 #include <string.h>
 
-extern char *CurrentInput;//用来存储输入
+extern char *CurrentInput; // 用来存储输入
 
 // 为每个终结符都设置种类来表示
 typedef enum
@@ -74,7 +74,9 @@ typedef enum
   ND_RETURN,    // 返回
   ND_BLOCK,     // { ... }，代码for块
   ND_IF,        // "if"，条件判断
-  ND_FOR        // "for"或者"while"
+  ND_FOR,       // "for"或者"while"
+  ND_ADDR,      // 取地址 &
+  ND_DEREF,     // 解引用 *
 } NodeKind;
 
 // AST中二叉树节点
@@ -82,7 +84,6 @@ struct Node
 {
   Node *Next;    // 下一节点，指代下一语句
   NodeKind Kind; // 节点种类
-  
 
   Node *LHS; // 左部，left-hand side
   Node *RHS; // 右部，right-hand side
@@ -103,8 +104,7 @@ struct Node
 };
 
 void error(const char *Fmt, ...);
-void errorTok(Token *Tok, char *Fmt, ...) ;
-
+void errorTok(Token *Tok, char *Fmt, ...);
 
 bool equal(Token *tok, const char *str);
 
