@@ -24,6 +24,7 @@ typedef enum
   TK_KEYWORD, // 关键字
 } TokenKind;
 
+typedef struct Type Type;
 // 终结符结构体
 typedef struct Token Token;
 struct Token
@@ -84,6 +85,7 @@ struct Node
 {
   Node *Next;    // 下一节点，指代下一语句
   NodeKind Kind; // 节点种类
+  Type *Ty;      // 节点中数据的类型
 
   Node *LHS; // 左部，left-hand side
   Node *RHS; // 右部，right-hand side
@@ -107,6 +109,30 @@ void error(const char *Fmt, ...);
 void errorTok(Token *Tok, char *Fmt, ...);
 
 bool equal(Token *tok, const char *str);
+
+//
+// 类型系统
+//
+
+// 类型种类
+typedef enum {
+  TY_INT, // int整型
+  TY_PTR, // 指针
+} TypeKind;
+
+struct Type {
+  TypeKind Kind; // 种类
+  Type *Base;    // 指向的类型
+};
+
+// 声明一个全局变量，定义在type.c中。
+extern Type TyInt;
+
+// 判断是否为整型
+bool isInteger(Type *TY);
+// 为节点内的所有节点添加类型
+void addType(Node *Nd);
+
 
 // 词法分析
 Token *tokenize(char *P);
