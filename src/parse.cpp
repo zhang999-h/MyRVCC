@@ -28,6 +28,19 @@ static Token *skip(Token *Tok, const char *Str)
     error("expect '%s'", Str);
   return Tok->Next;
 }
+// 消耗掉指定Token
+bool consume(Token **Rest, Token *Tok, char *Str)
+{
+  // 存在
+  if (equal(Tok, Str))
+  {
+    *Rest = Tok->Next;
+    return true;
+  }
+  // 不存在
+  *Rest = Tok;
+  return false;
+}
 
 // 新建一个节点
 static Node *newNode(NodeKind Kind, Token *Tok)
@@ -82,10 +95,11 @@ static Node *newVarNode(Obj *Var, Token *Tok)
   return Nd;
 }
 // 在链表中新增一个变量
-static Obj *newLVar(char *Name)
+static Obj *newLVar(char *Name, Type *Ty)
 {
   Obj *Var = (Obj *)calloc(1, sizeof(Obj));
   Var->Name = Name;
+  Var->Ty = Ty;
   // 将变量插入头部
   Var->Next = Locals;
   Locals = Var;
@@ -93,7 +107,11 @@ static Obj *newLVar(char *Name)
 }
 
 // program = compoundStmt
-// compoundStmt = "{" stmt* "}"  //!!!!!!!
+// compoundStmt = "{"(declaration | stmt)* "}"//!!!!!!!
+// declaration =
+//    declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
+// declspec = "int"
+// declarator = "*"* ident
 // stmt = "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt)?
 //        | "for" "(" exprStmt expr? ";" expr? ")" stmt
@@ -120,6 +138,87 @@ static Node *unary(Token **Rest, Token *Tok);
 static Node *primary(Token **Rest, Token *Tok);
 static Node *assign(Token **Rest, Token *Tok);
 static Node *compoundStmt(Token **Rest, Token *Tok);
+static Node *declaration(Token **Rest, Token *Tok);
+
+// 获取标识符
+static char *getIdent(Token *Tok)
+{
+  if (Tok->Kind != TK_IDENT)
+    errorTok(Tok, "expected an identifier");
+  return strndup(Tok->Loc, Tok->Len); // 参数 Tok->Loc 指向的字符串 前n个字符
+}
+
+// declspec = "int"
+// declarator specifier
+static Type *declspec(Token **Rest, Token *Tok)
+{
+  *Rest = skip(Tok, "int");
+  return &TyInt;
+}
+
+// declarator = "*"? ident
+static Type *declarator(Token **Rest, Token *Tok, Type *Ty)
+{
+  // "*"*
+  // 构建所有的（多重）指针
+  while (consume(&Tok, Tok, "*"))
+    Ty = pointerTo(Ty);
+
+  if (Tok->Kind != TK_IDENT)
+    errorTok(Tok, "expected a variable name");
+
+  // ident
+  // 变量名
+  Ty->Name = Tok;
+  *Rest = Tok->Next;
+  return Ty;
+}
+
+// declaration =
+//    declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
+static Node *declaration(Token **Rest, Token *Tok)
+{
+  // declspec
+  // 声明的 基础类型
+  Type *Basety = declspec(&Tok, Tok);
+
+  Node Head = {};
+  Node *Cur = &Head;
+  // 对变量声明次数计数
+  int I = 0;
+
+  // (declarator ("=" expr)? ("," declarator ("=" expr)?)*)?
+  while (!equal(Tok, ";"))
+  {
+    // 第1个变量不必匹配 ","
+    if (I++ > 0)
+      Tok = skip(Tok, ",");
+
+    // declarator
+    // 声明获取到变量类型，包括变量名
+    Type *Ty = declarator(&Tok, Tok, Basety);
+    Obj *Var = newLVar(getIdent(Ty->Name), Ty);
+
+    // 如果不存在"="则为变量声明，不需要生成节点，已经存储在Locals中了
+    if (!equal(Tok, "="))
+      continue;
+
+    // 解析“=”后面的Token
+    Node *LHS = newVarNode(Var, Ty->Name);
+    // 解析递归赋值语句
+    Node *RHS = assign(&Tok, Tok->Next);
+    Node *Node = newBinary(ND_ASSIGN, LHS, RHS, Tok);
+    // 存放在表达式语句中
+    Cur->Next = newUnary(ND_EXPR_STMT, Node, Tok);
+    Cur = Cur->Next;
+  }
+
+  // 将所有表达式语句，存放在代码块中
+  Node *Nd = newNode(ND_BLOCK, Tok);
+  Nd->Body = Head.Next;
+  *Rest = Tok->Next;
+  return Nd;
+}
 
 // 解析语句
 // stmt = "return" expr ";"
@@ -198,7 +297,7 @@ static Node *stmt(Token **Rest, Token *Tok)
 }
 
 // 解析复合语句
-// compoundStmt ="{" stmt* "}"
+// compoundStmt ="{" (declaration | stmt)* "}"
 static Node *compoundStmt(Token **Rest, Token *Tok)
 {
   Tok = skip(Tok, "{");
@@ -206,10 +305,15 @@ static Node *compoundStmt(Token **Rest, Token *Tok)
   // 这里使用了和词法分析类似的单向链表结构
   Node Head = {};
   Node *Cur = &Head;
-  // stmt* "}"
+  // (declaration | stmt)* "}"
   while (!equal(Tok, "}"))
   {
-    Cur->Next = stmt(&Tok, Tok);
+    // declaration
+    if (equal(Tok, "int"))
+      Cur->Next = declaration(&Tok, Tok);
+    // stmt
+    else
+      Cur->Next = stmt(&Tok, Tok);
     Cur = Cur->Next;
     // 构造完AST后，为节点添加类型信息
     addType(Cur);
@@ -338,7 +442,8 @@ static Node *relational(Token **Rest, Token *Tok)
   }
 }
 // 解析各种加法
-static Node *newAdd(Node *LHS, Node *RHS, Token *Tok) {
+static Node *newAdd(Node *LHS, Node *RHS, Token *Tok)
+{
   // 为左右部添加类型
   addType(LHS);
   addType(RHS);
@@ -352,7 +457,8 @@ static Node *newAdd(Node *LHS, Node *RHS, Token *Tok) {
     errorTok(Tok, "invalid operands");
 
   // 将 num + ptr 转换为 ptr + num
-  if (!LHS->Ty->Base && RHS->Ty->Base) {
+  if (!LHS->Ty->Base && RHS->Ty->Base)
+  {
     Node *Tmp = LHS;
     LHS = RHS;
     RHS = Tmp;
@@ -365,7 +471,8 @@ static Node *newAdd(Node *LHS, Node *RHS, Token *Tok) {
 }
 
 // 解析各种减法
-static Node *newSub(Node *LHS, Node *RHS, Token *Tok) {
+static Node *newSub(Node *LHS, Node *RHS, Token *Tok)
+{
   // 为左右部添加类型
   addType(LHS);
   addType(RHS);
@@ -375,7 +482,8 @@ static Node *newSub(Node *LHS, Node *RHS, Token *Tok) {
     return newBinary(ND_SUB, LHS, RHS, Tok);
 
   // ptr - num
-  if (LHS->Ty->Base && isInteger(RHS->Ty)) {
+  if (LHS->Ty->Base && isInteger(RHS->Ty))
+  {
     RHS = newBinary(ND_MUL, RHS, newNum(8, Tok), Tok);
     addType(RHS);
     Node *Nd = newBinary(ND_SUB, LHS, RHS, Tok);
@@ -385,7 +493,8 @@ static Node *newSub(Node *LHS, Node *RHS, Token *Tok) {
   }
 
   // ptr - ptr，返回两指针间有多少元素
-  if (LHS->Ty->Base && RHS->Ty->Base) {
+  if (LHS->Ty->Base && RHS->Ty->Base)
+  {
     Node *Nd = newBinary(ND_SUB, LHS, RHS, Tok);
     Nd->Ty = &TyInt;
     return newBinary(ND_DIV, Nd, newNum(8, Tok), Tok);
@@ -408,7 +517,7 @@ static Node *add(Token **Rest, Token *Tok)
     // "+" mul
     if (equal(Tok, "+"))
     {
-      //Nd = newBinary(ND_ADD, Nd, mul(&Tok, Tok->Next), Start);
+      // Nd = newBinary(ND_ADD, Nd, mul(&Tok, Tok->Next), Start);
       Nd = newAdd(Nd, mul(&Tok, Tok->Next), Start);
       continue;
     }
@@ -416,7 +525,7 @@ static Node *add(Token **Rest, Token *Tok)
     // "-" mul
     if (equal(Tok, "-"))
     {
-      //Nd = newBinary(ND_SUB, Nd, mul(&Tok, Tok->Next), Start);
+      // Nd = newBinary(ND_SUB, Nd, mul(&Tok, Tok->Next), Start);
       Nd = newSub(Nd, mul(&Tok, Tok->Next), Start);
       continue;
     }
@@ -493,10 +602,9 @@ static Node *primary(Token **Rest, Token *Tok)
   {
     // 查找变量
     Obj *Var = findVar(Tok);
-    // 如果变量不存在，就在链表中新增一个变量
+    // 如果变量不存在，就error
     if (!Var)
-      // strndup复制N个字符
-      Var = newLVar(strndup(Tok->Loc, Tok->Len));
+      errorTok(Tok, "undefined variable");
     *Rest = Tok->Next;
     return newVarNode(Var, Tok);
   }

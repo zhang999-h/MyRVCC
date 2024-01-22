@@ -44,6 +44,7 @@ struct Obj
 {
   Obj *Next;  // 指向下一对象
   char *Name; // 变量名
+  Type *Ty;   // 变量类型
   int Offset; // fp的偏移量
 };
 
@@ -123,6 +124,8 @@ typedef enum {
 struct Type {
   TypeKind Kind; // 种类
   Type *Base;    // 指向的类型
+  // 变量名
+  Token *Name;
 };
 
 // 声明一个全局变量，定义在type.c中。
@@ -133,6 +136,7 @@ bool isInteger(Type *TY);
 // 为节点内的所有节点添加类型
 void addType(Node *Nd);
 
+Type *pointerTo(Type *Base);
 
 // 词法分析
 Token *tokenize(char *P);

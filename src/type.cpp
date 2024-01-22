@@ -1,21 +1,23 @@
 #include "head.h"
 
 // (Type){...}构造了一个复合字面量，相当于Type的匿名变量。
-Type TyInt = {TY_INT,NULL};
+Type TyInt = {TY_INT, NULL};
 
 // 判断Type是否为int类型
 bool isInteger(Type *Ty) { return Ty->Kind == TY_INT; }
 
 // 指针类型，并且指向基类
-Type *pointerTo(Type *Base) {
-  Type *Ty = (Type*)calloc(1, sizeof(Type));
+Type *pointerTo(Type *Base)
+{
+  Type *Ty = (Type *)calloc(1, sizeof(Type));
   Ty->Kind = TY_PTR;
   Ty->Base = Base;
   return Ty;
 }
 
 // 为节点内的所有节点添加类型
-void addType(Node *Nd) {
+void addType(Node *Nd)
+{
   // 判断 节点是否为空 或者 节点类型已经有值，那么就直接返回
   if (!Nd || Nd->Ty)
     return;
@@ -33,7 +35,8 @@ void addType(Node *Nd) {
   for (Node *N = Nd->Body; N; N = N->Next)
     addType(N);
 
-  switch (Nd->Kind) {
+  switch (Nd->Kind)
+  {
   // 将节点类型设为 节点左部的类型
   case ND_ADD:
   case ND_SUB:
@@ -48,20 +51,23 @@ void addType(Node *Nd) {
   case ND_NE:
   case ND_LT:
   case ND_LE:
-  case ND_VAR:
+  // case ND_VAR:
   case ND_NUM:
     Nd->Ty = &TyInt;
+    return;
+  // 将节点类型设为 变量的类型
+  case ND_VAR:
+    Nd->Ty = Nd->Var->Ty;
     return;
   // 将节点类型设为 指针，并指向左部的类型
   case ND_ADDR:
     Nd->Ty = pointerTo(Nd->LHS->Ty);
     return;
-  // 节点类型：如果解引用指向的是指针，则为指针指向的类型；否则为int
+  // 节点类型：如果解引用指向的是指针，则为指针指向的类型；否则报错
   case ND_DEREF:
-    if (Nd->LHS->Ty->Kind == TY_PTR)
-      Nd->Ty = Nd->LHS->Ty->Base;
-    else
-      Nd->Ty = &TyInt;
+    if (Nd->LHS->Ty->Kind != TY_PTR)
+      errorTok(Nd->Tok, "invalid pointer dereference");
+    Nd->Ty = Nd->LHS->Ty->Base;
     return;
   default:
     break;
