@@ -127,7 +127,8 @@ static Obj *newLVar(char *Name, Type *Ty)
 // expr = mul ("+" mul | "-" mul)*
 // mul = unary ("*" unary | "/" unary)*
 // unary = ("+" | "-" | "*" | "&") unary | primary
-// primary = "(" expr ")" | ident|num
+// primary = "(" expr ")" | ident args? | num
+// args = "(" ")"
 static Node *exprStmt(Token **Rest, Token *Tok);
 static Node *expr(Token **Rest, Token *Tok);
 static Node *equality(Token **Rest, Token *Tok);
@@ -587,7 +588,8 @@ static Node *unary(Token **Rest, Token *Tok)
   return primary(Rest, Tok);
 }
 // 解析括号、数字、变量
-// primary = "(" expr ")" | ident|num
+// primary = "(" expr ")" | ident args? | num
+// args = "(" ")"
 static Node *primary(Token **Rest, Token *Tok)
 {
   // "(" expr ")"
@@ -597,9 +599,21 @@ static Node *primary(Token **Rest, Token *Tok)
     *Rest = skip(Tok, ")");
     return Nd;
   }
-  // ident
+  // ident args?
   if (Tok->Kind == TK_IDENT)
   {
+    // 函数调用
+    // args = "(" ")"
+    if (equal(Tok->Next, "("))
+    {
+      Node *Nd = newNode(ND_FUNCALL, Tok);
+      // ident
+      Nd->FuncName = strndup(Tok->Loc, Tok->Len);
+      *Rest = skip(Tok->Next->Next, ")");
+      return Nd;
+    }
+
+    // ident
     // 查找变量
     Obj *Var = findVar(Tok);
     // 如果变量不存在，就error

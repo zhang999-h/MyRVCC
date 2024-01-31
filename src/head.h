@@ -79,6 +79,7 @@ typedef enum
   ND_FOR,       // "for"或者"while"
   ND_ADDR,      // 取地址 &
   ND_DEREF,     // 解引用 *
+  ND_FUNCALL,   // 函数调用
 } NodeKind;
 
 // AST中二叉树节点
@@ -103,6 +104,9 @@ struct Node
   Node *Init; // 初始化语句for的初始化语句
   Node *Inc;  // 递增语句for的递增
 
+  // 函数调用
+  char *FuncName; // 函数名
+
   Token *Tok; // 节点对应的终结符
 };
 
@@ -116,12 +120,14 @@ bool equal(Token *tok, const char *str);
 //
 
 // 类型种类
-typedef enum {
+typedef enum
+{
   TY_INT, // int整型
   TY_PTR, // 指针
 } TypeKind;
 
-struct Type {
+struct Type
+{
   TypeKind Kind; // 种类
   Type *Base;    // 指向的类型
   // 变量名
