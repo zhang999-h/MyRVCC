@@ -66,28 +66,28 @@ assert() {
 
 
 # [6] 支持一元运算的+ -
-assert 10 '{ return -10+20; }'
-assert 10 '{ return - -10; }'
-assert 10 '{ return - - +10; }'
-assert 48 '{ return ------12*+++++----++++++++++4; }'
+assert 10 'int main(){ return -10+20; }'
+assert 10 'int main(){ return - -10; }'
+assert 10 'int main(){ return - - +10; }'
+assert 48 'int main(){ return ------12*+++++----++++++++++4; }'
 
 # [7] 支持条件运算符
-assert 0 '{0==1;}'
-assert 1 '{42==42;}'
-assert 1 '{0!=1;}'
-assert 0 '{42!=42;}'
-assert 1 '{1>=1;}'
-assert 0 '{1>=2;}'
-assert 1 '{5==2+3;}'
-assert 0 '{6==4+3;}'
-assert 1 '{0*9+5*2==4+4*(6/3)-2;}'
+assert 0 'int main(){0==1;}'
+assert 1 'int main(){42==42;}'
+assert 1 'int main(){0!=1;}'
+assert 0 'int main(){42!=42;}'
+assert 1 'int main(){1>=1;}'
+assert 0 'int main(){1>=2;}'
+assert 1 'int main(){5==2+3;}'
+assert 0 'int main(){6==4+3;}'
+assert 1 'int main(){0*9+5*2==4+4*(6/3)-2;}'
 #assert 1 '0<1;'
 #assert 0 '1<1;'
 #assert 0 '2<1;'
-assert 1 '{0<=1;}'
-assert 1 '{1<=1;}'
-assert 0 '{2<=1;}'
-assert 1 '{1>0;}'
+assert 1 'int main(){0<=1;}'
+assert 1 'int main(){1<=1;}'
+assert 0 'int main(){2<=1;}'
+assert 1 'int main(){1>0;}'
 
 # [9] 支持;分割语句
 #assert 3 '1; 2; 3;'
@@ -95,77 +95,77 @@ assert 1 '{1>0;}'
 
 
 # [10] 支持单字母变量
-assert 3 '{ int a=3;return a; }'
-assert 8 '{ int a=3,z=5;return a+z; }'
-assert 6 '{ int a,b; a=b=3;return a+b; }'
-assert 5 '{ int a=3,b=4,a=1;return a+b; }'
+assert 3 'int main(){ int a=3;return a; }'
+assert 8 'int main(){ int a=3,z=5;return a+z; }'
+assert 6 'int main(){ int a,b; a=b=3;return a+b; }'
+assert 5 'int main(){ int a=3,b=4,a=1;return a+b; }'
 #assert 5 'a=3;b=4;a=1;a+b;'
 # [11] 支持多字母变量
-assert 3 '{ int foo=3;return foo; }'
-assert 74 '{ int foo2=70; int bar4=4;return foo2+bar4; }'
+assert 3 'int main(){ int foo=3;return foo; }'
+assert 74 'int main(){ int foo2=70; int bar4=4;return foo2+bar4; }'
 
 # [12] 支持return
 
-assert 2 '{1; return 2; 3;}'
-assert 3 '{1; 2; return 3;}'
-assert 74 '{int foo2=70;int bar4=4;return foo2+bar4;}'
-assert 1 '{return 1; 2; 3;}'
+assert 2 'int main(){1; return 2; 3;}'
+assert 3 'int main(){1; 2; return 3;}'
+assert 74 'int main(){int foo2=70;int bar4=4;return foo2+bar4;}'
+assert 1 'int main(){return 1; 2; 3;}'
 
 
 # [13] 支持{...}
-assert 3 '{ {1; {2;} return 3;} }'
+assert 3 'int main(){ {1; {2;} return 3;} }'
 # 如果运行正常未提前退出，程序将显示OK
 # [14] 支持空语句
-assert 5 '{ ;;; return 5; }'
+assert 5 'int main(){ ;;; return 5; }'
 
 # [15] 支持if语句
-assert 3 '{ if (0) return 2; return 3; }'
-assert 3 '{ if (1-1) return 2; return 3; }'
-assert 2 '{ if (1) return 2; return 3; }'
-assert 2 '{ if (2-1) return 2; return 3; }'
-assert 4 '{ if (0) { 1; 2; return 3; } else { return 4; } }'
-assert 3 '{ if (1) { 1; 2; return 3; } else { return 4; } }'
+assert 3 'int main(){ if (0) return 2; return 3; }'
+assert 3 'int main(){ if (1-1) return 2; return 3; }'
+assert 2 'int main(){ if (1) return 2; return 3; }'
+assert 2 'int main(){ if (2-1) return 2; return 3; }'
+assert 4 'int main(){ if (0) { 1; 2; return 3; } else { return 4; } }'
+assert 3 'int main(){ if (1) { 1; 2; return 3; } else { return 4; } }'
 # [16] 支持for语句
-assert 55 '{int i=0;int j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; }'
-assert 3 '{ for (;;) {return 3;} return 5; }'
+assert 55 'int main(){int i=0;int j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; }'
+assert 3 'int main(){ for (;;) {return 3;} return 5; }'
 
 # [17] 支持while语句 复用了FOR的节点 
-assert 10 '{int i=0; while(i<10) { i=i+1; } return i; }'
+assert 10 'int main(){int i=0; while(i<10) { i=i+1; } return i; }'
 
 
 # [20] 支持一元& *运算符
-assert 3 '{int x=3; return *&x; }'
-assert 3 '{int x=3;int *y=&x;int **z=&y; return **z; }'
+assert 3 'int main(){int x=3; return *&x; }'
+assert 3 'int main(){int x=3;int *y=&x;int **z=&y; return **z; }'
 #assert 5 '{ x=3; y=5; return *(&x+8); }'
 #assert 3 '{ x=3; y=5; return *(&y-8); }'
-assert 5 '{int x=3;int *y=&x; *y=5; return x; }'
+assert 5 'int main{int x=3;int *y=&x; *y=5; return x; }'
 # assert 7 '{ x=3; y=5; *(&x+8)=7; return y; }'
 # assert 7 '{ x=3; y=5; *(&y-8)=7; return x; }'
-assert 8 '{int x=3;int *y=&x;  x=*y+5; return x; }'
+assert 8 'int main(){int x=3;int *y=&x;  x=*y+5; return x; }'
 
 
 # [21] 支持指针的算术运算
-assert 3 '{int x=3;int y=5; return *(&y-1); }'
-assert 5 '{int x=3;int y=5; return *(&x+1); }'
-assert 7 '{int x=3;int y=5; *(&y-1)=7; return x; }'
-assert 7 '{int x=3;int y=5; *(&x+1)=7; return y; }'
+assert 3 'int main(){int x=3;int y=5; return *(&y-1); }'
+assert 5 'int main(){int x=3;int y=5; return *(&x+1); }'
+assert 7 'int main(){int x=3;int y=5; *(&y-1)=7; return x; }'
+assert 7 'int main(){int x=3;int y=5; *(&x+1)=7; return y; }'
 
 
 # [22] 支持int关键字
-assert 8 '{ int x, y; x=3; y=5; return x+y; }'
-assert 8 '{ int x=3, y=5; return x+y; }'
+assert 8 'int main(){ int x, y; x=3; y=5; return x+y; }'
+assert 8 'int main(){ int x=3, y=5; return x+y; }'
 
 # [23] 支持零参函数调用
-assert 3 '{ return ret3(); }'
-assert 5 '{ return ret5(); }'
-assert 8 '{ return ret3()+ret5(); }'
+assert 3 'int main(){ return ret3(); }'
+assert 5 'int main(){ return ret5(); }'
+assert 8 'int main(){ return ret3()+ret5(); }'
 
 
 # [24] 支持最多6个参数的函数调用
-assert 8 '{ return add(3, 5); }'
-assert 2 '{ return sub(5, 3); }'
-assert 21 '{ return add6(1,2,3,4,5,6); }'
-assert 66 '{ return add6(1,2,add6(3,4,5,6,7,8),9,10,11); }'
-assert 136 '{ return add6(1,2,add6(3,add6(4,5,6,7,8,9),10,11,12,13),14,15,16); }'
+assert 8 'int main(){ return add(3, 5); }'
+assert 2 'int main(){ return sub(5, 3); }'
+assert 21 'int main(){ return add6(1,2,3,4,5,6); }'
+assert 66 'int main(){ return add6(1,2,add6(3,4,5,6,7,8),9,10,11); }'
+assert 136 'int main(){ return add6(1,2,add6(3,add6(4,5,6,7,8,9),10,11,12,13),14,15,16); }'
 
 echo OK

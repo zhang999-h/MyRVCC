@@ -15,6 +15,15 @@ Type *pointerTo(Type *Base)
   return Ty;
 }
 
+// 函数类型，并赋返回类型
+Type *funcType(Type *ReturnTy)
+{
+  Type *Ty = (Type *)calloc(1, sizeof(Type));
+  Ty->Kind = TY_FUNC;
+  Ty->ReturnTy = ReturnTy;
+  return Ty;
+}
+
 // 为节点内的所有节点添加类型
 void addType(Node *Nd)
 {
