@@ -106,6 +106,7 @@ struct Node
 
   // 函数调用
   char *FuncName; // 函数名
+  Node *Args;     // 函数参数
 
   Token *Tok; // 节点对应的终结符
 };

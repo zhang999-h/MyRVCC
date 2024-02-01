@@ -127,8 +127,8 @@ static Obj *newLVar(char *Name, Type *Ty)
 // expr = mul ("+" mul | "-" mul)*
 // mul = unary ("*" unary | "/" unary)*
 // unary = ("+" | "-" | "*" | "&") unary | primary
-// primary = "(" expr ")" | ident args? | num
-// args = "(" ")"
+// primary = "(" expr ")" | ident func-args? | num
+// funcall = ident "(" (assign ("," assign)*)? ")"
 static Node *exprStmt(Token **Rest, Token *Tok);
 static Node *expr(Token **Rest, Token *Tok);
 static Node *equality(Token **Rest, Token *Tok);
@@ -140,7 +140,7 @@ static Node *primary(Token **Rest, Token *Tok);
 static Node *assign(Token **Rest, Token *Tok);
 static Node *compoundStmt(Token **Rest, Token *Tok);
 static Node *declaration(Token **Rest, Token *Tok);
-
+static Node *funcall(Token **Rest, Token *Tok);
 // 获取标识符
 static char *getIdent(Token *Tok)
 {
@@ -588,8 +588,7 @@ static Node *unary(Token **Rest, Token *Tok)
   return primary(Rest, Tok);
 }
 // 解析括号、数字、变量
-// primary = "(" expr ")" | ident args? | num
-// args = "(" ")"
+// primary = "(" expr ")" | ident func-args? | num
 static Node *primary(Token **Rest, Token *Tok)
 {
   // "(" expr ")"
@@ -606,11 +605,11 @@ static Node *primary(Token **Rest, Token *Tok)
     // args = "(" ")"
     if (equal(Tok->Next, "("))
     {
-      Node *Nd = newNode(ND_FUNCALL, Tok);
-      // ident
-      Nd->FuncName = strndup(Tok->Loc, Tok->Len);
-      *Rest = skip(Tok->Next->Next, ")");
-      return Nd;
+      // Node *Nd = newNode(ND_FUNCALL, Tok);
+      // // ident
+      // Nd->FuncName = strndup(Tok->Loc, Tok->Len);
+      // *Rest = skip(Tok->Next->Next, ")");
+      return funcall(Rest, Tok);
     }
 
     // ident
@@ -632,6 +631,27 @@ static Node *primary(Token **Rest, Token *Tok)
   errorTok(Tok, "expected an expression");
   // error("expected an expression");
   return NULL;
+}
+
+// funcall = ident "(" (assign ("," assign)*)? ")"
+static Node *funcall(Token **Rest, Token *Tok)
+{
+  Node *Nd = newNode(ND_FUNCALL, Tok);
+  // ident
+  Nd->FuncName = strndup(Tok->Loc, Tok->Len);
+  Tok = skip(Tok->Next, "(");
+  Node head = {};
+  Node *tmp = &head, args;
+
+  while (!equal(Tok, ")"))
+  {
+    tmp->Next = expr(&Tok, Tok);
+    tmp = tmp->Next;
+    consume(&Tok, Tok, ",");
+  }
+  Nd->Args = head.Next;
+  *Rest = skip(Tok, ")");
+  return Nd;
 }
 
 // 语法解析入口函数
