@@ -15,6 +15,14 @@ Type *pointerTo(Type *Base)
   return Ty;
 }
 
+// 复制类型
+Type *copyType(Type *Ty)
+{
+  Type *Ret = (Type *)calloc(1, sizeof(Type));
+  *Ret = *Ty;
+  return Ret;
+}
+
 // 函数类型，并赋返回类型
 Type *funcType(Type *ReturnTy)
 {
@@ -44,6 +52,9 @@ void addType(Node *Nd)
   for (Node *N = Nd->Body; N; N = N->Next)
     addType(N);
 
+  // 访问链表内的所有参数节点以增加类型
+  for (Node *N = Nd->Args; N; N = N->Next)
+    addType(N);
   switch (Nd->Kind)
   {
   // 将节点类型设为 节点左部的类型

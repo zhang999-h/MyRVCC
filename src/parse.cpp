@@ -105,13 +105,33 @@ static Obj *newLVar(char *Name, Type *Ty)
   Locals = Var;
   return Var;
 }
+// 获取标识符
+static char *getIdent(Token *Tok)
+{
+  if (Tok->Kind != TK_IDENT)
+    errorTok(Tok, "expected an identifier");
+  return strndup(Tok->Loc, Tok->Len); // 参数 Tok->Loc 指向的字符串 前n个字符
+}
+// 将形参添加到Locals
+static void createParamLVars(Type *Param)
+{
+  if (Param)
+  {
+    // 递归到形参最底部
+    // 先将最底部的加入Locals中，之后的都逐个加入到顶部，保持顺序不变
+    createParamLVars(Param->Next);
+    // 添加到Locals中
+    newLVar(getIdent(Param->Name), Param);
+  }
+}
 
 // program = functionDefinition*
 // functionDefinition = declspec declarator compoundStmt*
 // declspec = "int"
 // declarator = "*"* ident typeSuffix
-// typeSuffix = ("(" ")")?
-
+// typeSuffix = ("(" funcParams? ")")?
+// funcParams = param ("," param)*
+// param = declspec declarator
 // compoundStmt = "{"(declaration | stmt)* "}"//!!!!!!!
 // declaration =
 //    declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
@@ -148,13 +168,7 @@ static Type *declarator(Token **Rest, Token *Tok, Type *Ty);
 static Node *declaration(Token **Rest, Token *Tok);
 static Node *funcall(Token **Rest, Token *Tok);
 static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty);
-// 获取标识符
-static char *getIdent(Token *Tok)
-{
-  if (Tok->Kind != TK_IDENT)
-    errorTok(Tok, "expected an identifier");
-  return strndup(Tok->Loc, Tok->Len); // 参数 Tok->Loc 指向的字符串 前n个字符
-}
+
 
 // functionDefinition = declspec declarator "{" compoundStmt*
 static Function *function(Token **Rest, Token *Tok)
@@ -171,6 +185,9 @@ static Function *function(Token **Rest, Token *Tok)
   Function *Fn = (Function *)calloc(1, sizeof(Function));
   Fn->Name = getIdent(Ty->Name);
 
+  // 函数参数
+  createParamLVars(Ty->Params);
+  Fn->Params = Locals;
   // Tok = skip(Tok, "{");
   //  函数体存储语句的AST，Locals存储变量
   Fn->Body = compoundStmt(Rest, Tok);
@@ -206,14 +223,39 @@ static Type *declarator(Token **Rest, Token *Tok, Type *Ty)
   //*Rest = Tok;
   return Ty;
 }
-// typeSuffix = ("(" ")")?
+// typeSuffix = ("(" funcParams? ")")?
+// funcParams = param ("," param)*
+// param = declspec declarator
 static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty)
 {
-  // ("(" ")")?
+  // ("(" funcParams? ")")?
   if (equal(Tok, "("))
   {
-    *Rest = skip(Tok->Next, ")");
-    return funcType(Ty);
+    Tok = Tok->Next;
+
+    // 存储形参的链表
+    Type Head = {};
+    Type *Cur = &Head;
+
+    while (!equal(Tok, ")"))
+    {
+      // funcParams = param ("," param)*
+      // param = declspec declarator
+      if (Cur != &Head)
+        Tok = skip(Tok, ",");
+      Type *BaseTy = declspec(&Tok, Tok);
+      Type *DeclarTy = declarator(&Tok, Tok, BaseTy);
+      // 将类型复制到形参链表一份
+      Cur->Next = copyType(DeclarTy);
+      Cur = Cur->Next;
+    }
+
+    // 封装一个函数节点
+    Ty = funcType(Ty);
+    // 传递形参
+    Ty->Params = Head.Next;
+    *Rest = Tok->Next;
+    return Ty;
   }
   *Rest = Tok;
   return Ty;
@@ -715,5 +757,6 @@ Function *parse(Token *Tok)
   // Function *Prog = (Function *)calloc(1, sizeof(Function));
   // Prog->Body = compoundStmt(&Tok, Tok);
   // Prog->Locals = Locals;
-  return Head.Next;;
+  return Head.Next;
+  ;
 }

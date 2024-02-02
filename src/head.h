@@ -52,11 +52,12 @@ struct Obj
 typedef struct Function Function;
 struct Function
 {
-  Node *Body;    // 函数体
-  Obj *Locals;   // 本地变量
-  int StackSize; // 栈大小
+  Node *Body;     // 函数体
+  Obj *Locals;    // 本地变量
+  int StackSize;  // 栈大小
   Function *Next; // 下一函数
   char *Name;     // 函数名
+  Obj *Params;    // 形参
 };
 
 // AST的节点种类
@@ -125,8 +126,8 @@ bool equal(Token *tok, const char *str);
 // 类型种类
 typedef enum
 {
-  TY_INT, // int整型
-  TY_PTR, // 指针
+  TY_INT,  // int整型
+  TY_PTR,  // 指针
   TY_FUNC, // 函数
 } TypeKind;
 
@@ -138,6 +139,8 @@ struct Type
   Token *Name;
   // 函数类型
   Type *ReturnTy; // 函数返回的类型
+  Type *Params;   // 形参
+  Type *Next;     // 下一类型
 };
 
 // 声明一个全局变量，定义在type.c中。
@@ -152,6 +155,9 @@ void addType(Node *Nd);
 Type *funcType(Type *ReturnTy);
 
 Type *pointerTo(Type *Base);
+
+// 复制类型
+Type *copyType(Type *Ty);
 
 // 词法分析
 Token *tokenize(char *P);
