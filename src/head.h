@@ -126,15 +126,20 @@ bool equal(Token *tok, const char *str);
 // 类型种类
 typedef enum
 {
-  TY_INT,  // int整型
-  TY_PTR,  // 指针
-  TY_FUNC, // 函数
+  TY_INT,   // int整型
+  TY_PTR,   // 指针
+  TY_FUNC,  // 函数
+  TY_ARRAY, // 数组
 } TypeKind;
 
 struct Type
 {
   TypeKind Kind; // 种类
+  int Size;      // 大小, sizeof返回的值
   Type *Base;    // 指向的类型
+
+  // 数组
+  int ArrayLen; // 数组长度, 元素总个数
   // 变量名
   Token *Name;
   // 函数类型
@@ -158,6 +163,9 @@ Type *pointerTo(Type *Base);
 
 // 复制类型
 Type *copyType(Type *Ty);
+
+// 数组类型
+Type *arrayOf(Type *Base, int Size);
 
 // 词法分析
 Token *tokenize(char *P);

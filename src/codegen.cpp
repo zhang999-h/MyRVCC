@@ -18,6 +18,7 @@ static int count(void)
     return I++;
 }
 
+
 // 压栈，将结果临时压入栈中备用
 // sp为栈指针，栈反向向下增长，64位下，8个字节为一个单位，所以sp-8
 // 当前栈指针的地址就是sp，将a0的值压入栈
@@ -38,7 +39,21 @@ static void pop(const char *Reg)
     printf("  addi sp, sp, 8\n");
     Depth--;
 }
+// 加载a0指向的值
+static void load(Type *Ty) {
+  if (Ty->Kind == TY_ARRAY)//数组当变量时需要的是它的地址
+    return;
 
+  printf("  # 读取a0中存放的地址，得到的值存入a0\n");
+  printf("  ld a0, 0(a0)\n");
+}
+
+// 将a0存入栈顶的一个地址存上
+static void store(void) {
+  pop("a1");
+  printf("  # 将a0的值，写入到a1中存放的地址\n");
+  printf("  sd a0, 0(a1)\n");
+};
 // 对齐到Align的整数倍
 static int alignTo(int N, int Align)
 {
@@ -110,16 +125,13 @@ static void genExpr(Node *Nd)
     case ND_VAR:
         // 计算出变量的地址，然后存入a0
         genAddr(Nd);
-        // 访问a0地址中存储的数据，存入到a0当中
-        printf("  # 读取a0中存放的地址，得到的值存入a0\n");
-        printf("  ld a0, 0(a0)\n");
+        load(Nd->Ty);
         return;
         // 解引用
     case ND_DEREF: // 解引用理解起来难，实现简单，如*y ：现在y中其实是地址，只需要再把地址做一次寻址操作就行了
         genExpr(Nd->LHS);
         // 只需要再把地址做一次寻址操作就行了
-        printf("  # 读取a0中存放的地址，得到的值存入a0\n");
-        printf("  ld a0, 0(a0)\n");
+        load(Nd->Ty);
         return;
     // 取地址
     case ND_ADDR:
@@ -176,8 +188,7 @@ static void genExpr(Node *Nd)
         push();
         // 右部是右值，为表达式的值
         genExpr(Nd->RHS);
-        pop("a1");
-        printf("  sd a0, 0(a1)\n");
+        store();
         return;
     default:
         break;
