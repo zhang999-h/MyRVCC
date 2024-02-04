@@ -129,7 +129,7 @@ static void createParamLVars(Type *Param)
 // functionDefinition = declspec declarator compoundStmt*
 // declspec = "int"
 // declarator = "*"* ident typeSuffix
-// typeSuffix = funcParams| "[" num "]" | ε
+// typeSuffix = funcParams| ("[" num "]")* | ε
 // funcParams = "(" (param ("," param)*)* ")"
 // param = declspec declarator
 // compoundStmt = "{"(declaration | stmt)* "}"//!!!!!!!
@@ -149,7 +149,8 @@ static void createParamLVars(Type *Param)
 // add = mul ("+" mul | "-" mul)*
 // expr = mul ("+" mul | "-" mul)*
 // mul = unary ("*" unary | "/" unary)*
-// unary = ("+" | "-" | "*" | "&") unary | primary
+// unary = ("+" | "-" | "*" | "&") unary | postfix
+// postfix = primary ("[" expr "]")*
 // primary = "(" expr ")" | ident func-args? | num
 // funcall = ident "(" (assign ("," assign)*)? ")"
 static Function *function(Token **Rest, Token *Tok);
@@ -160,6 +161,7 @@ static Node *relational(Token **Rest, Token *Tok);
 static Node *add(Token **Rest, Token *Tok);
 static Node *mul(Token **Rest, Token *Tok);
 static Node *unary(Token **Rest, Token *Tok);
+static Node *postfix(Token **Rest, Token *Tok);
 static Node *primary(Token **Rest, Token *Tok);
 static Node *assign(Token **Rest, Token *Tok);
 static Node *compoundStmt(Token **Rest, Token *Tok);
@@ -224,7 +226,7 @@ static Type *declarator(Token **Rest, Token *Tok, Type *Ty)
   return Ty;
 }
 
-// typeSuffix = funcParams| "[" num "]" | ε
+// typeSuffix = funcParams| ("[" num "]")* | ε
 static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty)
 {
   // ("(" funcParams? ")")?
@@ -234,11 +236,13 @@ static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty)
   }
   if (equal(Tok, "["))
   {
-    Tok=skip(Tok,"[");
-    int len=getNumber(Tok);
-    Ty=arrayOf(Ty,len);
-    Tok=Tok->Next;
-    Tok=skip(Tok,"]");   
+    Tok = skip(Tok, "[");
+    int len = getNumber(Tok);
+
+    Tok = Tok->Next;
+    Tok = skip(Tok, "]");
+    Ty = typeSuffix(&Tok, Tok, Ty);
+    Ty = arrayOf(Ty, len);
   }
   *Rest = Tok;
   return Ty;
@@ -566,7 +570,7 @@ static Node *newAdd(Node *LHS, Node *RHS, Token *Tok)
 
   // ptr + num
   // 指针加法，ptr+1，这里的1不是1个字节，而是1个元素的空间，所以需要 ×基类Size 操作
-  RHS = newBinary(ND_MUL, RHS, newNum(LHS->Ty->Size, Tok), Tok);
+  RHS = newBinary(ND_MUL, RHS, newNum(LHS->Ty->Base->Size, Tok), Tok);
   return newBinary(ND_ADD, LHS, RHS, Tok);
 }
 
@@ -665,7 +669,7 @@ static Node *mul(Token **Rest, Token *Tok)
   }
 }
 
-// unary = ("+" | "-" | "*" | "&") unary | primary
+// unary = ("+" | "-" | "*" | "&") unary | postfix
 static Node *unary(Token **Rest, Token *Tok)
 {
   // "+" unary
@@ -683,9 +687,31 @@ static Node *unary(Token **Rest, Token *Tok)
   if (equal(Tok, "*"))
     return newUnary(ND_DEREF, unary(Rest, Tok->Next), Tok);
 
-  // primary
-  return primary(Rest, Tok);
+  // postfix
+  return postfix(Rest, Tok);
 }
+
+
+
+// postfix = primary ("[" expr "]")*
+static Node *postfix(Token **Rest, Token *Tok)
+{
+  // primary
+  Node *Nd = primary(&Tok, Tok);
+
+  // ("[" expr "]")*
+  while (equal(Tok, "["))
+  {
+    // x[y] 等价于 *(x+y)
+    Token *Start = Tok;
+    Node *Idx = expr(&Tok, Tok->Next);
+    Tok = skip(Tok, "]");
+    Nd = newUnary(ND_DEREF, newAdd(Nd, Idx, Start), Start);
+  }
+  *Rest = Tok;
+  return Nd;
+}
+
 // 解析括号、数字、变量
 // primary = "(" expr ")" | ident func-args? | num
 static Node *primary(Token **Rest, Token *Tok)

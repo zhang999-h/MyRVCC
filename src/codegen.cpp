@@ -97,7 +97,7 @@ static void assignLVarOffsets(Function *Prog)
     for (Obj *Var = Prog->Locals; Var; Var = Var->Next)
     {
         // 每个变量分配8字节
-        Offset += 8;
+        Offset += Var->Ty->Size;
         // 为每个变量赋一个偏移量，或者说是栈中地址
         Var->Offset = -Offset;
     }
