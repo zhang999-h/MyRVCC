@@ -151,7 +151,7 @@ static void createParamLVars(Type *Param)
 // mul = unary ("*" unary | "/" unary)*
 // unary = ("+" | "-" | "*" | "&") unary | postfix
 // postfix = primary ("[" expr "]")*
-// primary = "(" expr ")" | ident func-args? | num
+// primary = "(" expr ")" | ident func-args? | num |"sizeof" unary |
 // funcall = ident "(" (assign ("," assign)*)? ")"
 static Function *function(Token **Rest, Token *Tok);
 static Node *exprStmt(Token **Rest, Token *Tok);
@@ -691,8 +691,6 @@ static Node *unary(Token **Rest, Token *Tok)
   return postfix(Rest, Tok);
 }
 
-
-
 // postfix = primary ("[" expr "]")*
 static Node *postfix(Token **Rest, Token *Tok)
 {
@@ -713,7 +711,7 @@ static Node *postfix(Token **Rest, Token *Tok)
 }
 
 // 解析括号、数字、变量
-// primary = "(" expr ")" | ident func-args? | num
+// primary = "(" expr ")" | ident func-args? | num | "sizeof" unary |
 static Node *primary(Token **Rest, Token *Tok)
 {
   // "(" expr ")"
@@ -722,6 +720,13 @@ static Node *primary(Token **Rest, Token *Tok)
     Node *Nd = expr(&Tok, Tok->Next);
     *Rest = skip(Tok, ")");
     return Nd;
+  }
+  // "sizeof" unary
+  if (equal(Tok, "sizeof"))
+  {
+    Node *Nd = unary(Rest, Tok->Next);
+    addType(Nd);
+    return newNum(Nd->Ty->Size, Tok);
   }
   // ident args?
   if (Tok->Kind == TK_IDENT)
@@ -736,7 +741,6 @@ static Node *primary(Token **Rest, Token *Tok)
       // *Rest = skip(Tok->Next->Next, ")");
       return funcall(Rest, Tok);
     }
-
     // ident
     // 查找变量
     Obj *Var = findVar(Tok);
@@ -753,6 +757,7 @@ static Node *primary(Token **Rest, Token *Tok)
     *Rest = Tok->Next;
     return Nd;
   }
+
   errorTok(Tok, "expected an expression");
   // error("expected an expression");
   return NULL;
