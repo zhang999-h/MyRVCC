@@ -7,7 +7,7 @@ static void genExpr(Node *Nd);
 // 记录栈深度
 static int Depth;
 
-Function *CurFn;
+Obj *CurFn;
 // 用于函数参数的寄存器们
 static char *ArgReg[] = {"a0", "a1", "a2", "a3", "a4", "a5"};
 
@@ -17,7 +17,6 @@ static int count(void)
     static int I = 1;
     return I++;
 }
-
 
 // 压栈，将结果临时压入栈中备用
 // sp为栈指针，栈反向向下增长，64位下，8个字节为一个单位，所以sp-8
@@ -40,19 +39,21 @@ static void pop(const char *Reg)
     Depth--;
 }
 // 加载a0指向的值
-static void load(Type *Ty) {
-  if (Ty->Kind == TY_ARRAY)//数组当变量时需要的是它的地址
-    return;
+static void load(Type *Ty)
+{
+    if (Ty->Kind == TY_ARRAY) // 数组当变量时需要的是它的地址
+        return;
 
-  printf("  # 读取a0中存放的地址，得到的值存入a0\n");
-  printf("  ld a0, 0(a0)\n");
+    printf("  # 读取a0中存放的地址，得到的值存入a0\n");
+    printf("  ld a0, 0(a0)\n");
 }
 
 // 将a0存入栈顶的一个地址存上
-static void store(void) {
-  pop("a1");
-  printf("  # 将a0的值，写入到a1中存放的地址\n");
-  printf("  sd a0, 0(a1)\n");
+static void store(void)
+{
+    pop("a1");
+    printf("  # 将a0的值，写入到a1中存放的地址\n");
+    printf("  sd a0, 0(a1)\n");
 };
 // 对齐到Align的整数倍
 static int alignTo(int N, int Align)
@@ -90,7 +91,7 @@ static void genAddr(Node *Nd)
     errorTok(Nd->Tok, "not an lvalue");
 }
 // 根据变量的链表计算出偏移量
-static void assignLVarOffsets(Function *Prog)
+static void assignLVarOffsets(Obj *Prog)
 {
     int Offset = 0;
     // 读取所有变量
@@ -369,11 +370,14 @@ static void genStmt(Node *Nd)
 }
 
 // 代码生成入口函数，包含代码块的基础信息
-void codegen(Function *Prog)
+void codegen(Obj *Prog)
 {
     // 为每个函数单独生成代码
-    for (Function *Fn = Prog; Fn; Fn = Fn->Next)
+    for (Obj *Fn = Prog; Fn; Fn = Fn->Next)
     {
+        // 如果不是函数,则终止
+        if (!Fn->IsFunction)
+            continue;
         CurFn = Fn; // 用于在程序中return
         // 声明一个全局main段，同时也是程序入口段
         printf("  # 定义全局%s段\n", Fn->Name);
@@ -418,7 +422,7 @@ void codegen(Function *Prog)
             printf("  # 将%s寄存器的值存入%s的栈地址\n", ArgReg[I], Var->Name);
             printf("  sd %s, %d(fp)\n", ArgReg[I++], Var->Offset);
         }
-        
+
         // 生成语句链表的代码
         printf("\n# =====%s段主体===============\n", Fn->Name);
         genStmt(Fn->Body);

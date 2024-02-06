@@ -216,4 +216,7 @@ assert 9 'int main() { int x[3][4]; return sizeof **x + 1; }'
 assert 8 'int main() { int x[3][4]; return sizeof(**x + 1); }'
 assert 8 'int main() { int x=1; return sizeof(x=2); }'
 assert 1 'int main() { int x=1; sizeof(x=2); return x; }'
+
+#[31] 全局变量不属于任何函数，但是全局变量可以在函数外初始化，
+#也就是说 Obj 数据结构也需要 Node 结点用作 codeGen 中生成代码，所以不如融合
 echo OK
