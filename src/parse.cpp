@@ -151,7 +151,7 @@ static void createParamLVars(Type *Param)
 
 // program = (functionDefinition | globalVariable)*
 // functionDefinition = declspec declarator compoundStmt*
-// declspec = "int"
+// declspec = "int" | "char"
 // declarator = "*"* ident typeSuffix
 // typeSuffix = funcParams| ("[" num "]")* | ε
 // funcParams = "(" (param ("," param)*)* ")"
@@ -229,10 +229,16 @@ static Token *function(Token *Tok, Type *BaseTy)
   return Tok;
 }
 
-// declspec = "int"
+// declspec = "int" | "char"
 // declarator specifier
 static Type *declspec(Token **Rest, Token *Tok)
 {
+  // "char"
+  if (equal(Tok, "char"))
+  {
+    *Rest = Tok->Next;
+    return &TyChar;
+  }
   *Rest = skip(Tok, "int");
   return &TyInt;
 }
@@ -431,6 +437,11 @@ static Node *stmt(Token **Rest, Token *Tok)
   // exprStmt
   return exprStmt(Rest, Tok);
 }
+// 判断是否为类型名
+static bool isTypename(Token *Tok)
+{
+  return equal(Tok, "char") || equal(Tok, "int");
+}
 
 // 解析复合语句
 // compoundStmt ="{" (declaration | stmt)* "}"
@@ -445,7 +456,7 @@ static Node *compoundStmt(Token **Rest, Token *Tok)
   while (!equal(Tok, "}"))
   {
     // declaration
-    if (equal(Tok, "int"))
+    if (isTypename(Tok))
       Cur->Next = declaration(&Tok, Tok);
     // stmt
     else

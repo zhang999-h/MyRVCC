@@ -137,6 +137,7 @@ bool equal(Token *tok, const char *str);
 // 类型种类
 typedef enum
 {
+  TY_CHAR,  // char字符类型
   TY_INT,   // int整型
   TY_PTR,   // 指针
   TY_FUNC,  // 函数
@@ -159,8 +160,9 @@ struct Type
   Type *Next;     // 下一类型
 };
 
-// 声明一个全局变量，定义在type.c中。
+// 声明全局变量，定义在type.c中。
 extern Type TyInt;
+extern Type TyChar;
 
 // 判断是否为整型
 bool isInteger(Type *TY);

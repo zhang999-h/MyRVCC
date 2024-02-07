@@ -2,9 +2,10 @@
 
 // (Type){...}构造了一个复合字面量，相当于Type的匿名变量。
 Type TyInt = {TY_INT, 8};
+Type TyChar = {TY_CHAR, 1};
 
 // 判断Type是否为int类型
-bool isInteger(Type *Ty) { return Ty->Kind == TY_INT; }
+bool isInteger(Type *Ty) { return Ty->Kind == TY_INT || Ty->Kind == TY_CHAR; }
 
 // 指针类型，并且指向基类
 Type *pointerTo(Type *Base)
