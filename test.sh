@@ -139,7 +139,7 @@ assert 3 'int main(){int x=3; return *&x; }'
 assert 3 'int main(){int x=3;int *y=&x;int **z=&y; return **z; }'
 #assert 5 '{ x=3; y=5; return *(&x+8); }'
 #assert 3 '{ x=3; y=5; return *(&y-8); }'
-assert 5 'int main{int x=3;int *y=&x; *y=5; return x; }'
+assert 5 'int main(){int x=3;int *y=&x; *y=5; return x; }'
 # assert 7 '{ x=3; y=5; *(&x+8)=7; return y; }'
 # assert 7 '{ x=3; y=5; *(&y-8)=7; return x; }'
 assert 8 'int main(){int x=3;int *y=&x;  x=*y+5; return x; }'
@@ -219,4 +219,17 @@ assert 1 'int main() { int x=1; sizeof(x=2); return x; }'
 
 #[31] 全局变量不属于任何函数，但是全局变量可以在函数外初始化，
 #也就是说 Obj 数据结构也需要 Node 结点用作 codeGen 中生成代码，所以不如融合
+
+# [32] 支持全局变量
+assert 0 'int x; int main() { return x; }'
+assert 3 'int x; int main() { x=3; return x; }'
+assert 7 'int x; int y; int main() { x=3; y=4; return x+y; }'
+assert 7 'int x, y; int main() { x=3; y=4; return x+y; }'
+assert 0 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[0]; }'
+assert 1 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[1]; }'
+assert 2 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[2]; }'
+assert 3 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }'
+
+assert 8 'int x; int main() { return sizeof(x); }'
+assert 32 'int x[4]; int main() { return sizeof(x); }'
 echo OK

@@ -26,7 +26,7 @@ static int getNumber(Token *tok)
 static Token *skip(Token *Tok, const char *Str)
 {
   if (!equal(Tok, Str))
-    error("expect '%s'", Str);
+    errorTok(Tok, "expect '%s'", Str);
   return Tok->Next;
 }
 // 消耗掉指定Token
@@ -76,11 +76,17 @@ static Node *newNum(int Val, Token *Tok)
   Nd->Val = Val;
   return Nd;
 }
-// 通过名称，查找一个本地变量
+// 通过名称，查找一个变量
 static Obj *findVar(Token *Tok)
 {
   // 查找Locals变量中是否存在同名变量
   for (Obj *Var = Locals; Var; Var = Var->Next)
+    // 判断变量名是否和终结符名长度一致，然后逐字比较。
+    if (strlen(Var->Name) == Tok->Len &&
+        !strncmp(Tok->Loc, Var->Name, Tok->Len))
+      return Var;
+  // 查找Globals变量中是否存在同名变量
+  for (Obj *Var = Globals; Var; Var = Var->Next)
     // 判断变量名是否和终结符名长度一致，然后逐字比较。
     if (strlen(Var->Name) == Tok->Len &&
         !strncmp(Tok->Loc, Var->Name, Tok->Len))
@@ -122,6 +128,7 @@ static Obj *newLVar(char *Name, Type *Ty)
   Locals = Var;
   return Var;
 }
+
 // 获取标识符
 static char *getIdent(Token *Tok)
 {
@@ -189,6 +196,17 @@ static Node *funcall(Token **Rest, Token *Tok);
 static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty);
 static Type *funParams(Token **Rest, Token *Tok, Type *Ty);
 
+static Token *globalVariable(Token *Tok, Type *Basety)
+{
+  while (!equal(Tok, ";"))
+  {
+    consume(&Tok, Tok, ",");
+    Type *Ty = declarator(&Tok, Tok, Basety);
+    newGVar(getIdent(Ty->Name), Ty);
+  }
+  Tok = skip(Tok, ";");
+  return Tok;
+}
 // functionDefinition = declspec declarator "{" compoundStmt*
 static Token *function(Token *Tok, Type *BaseTy)
 {
@@ -197,7 +215,7 @@ static Token *function(Token *Tok, Type *BaseTy)
 
   // 清空局部变量Locals
   Locals = NULL;
-  //函数名在Obj->Var中
+  // 函数名在Obj->Var中
   Obj *Fn = newGVar(getIdent(Ty->Name), Ty);
   Fn->IsFunction = true;
 
@@ -798,6 +816,11 @@ static Node *funcall(Token **Rest, Token *Tok)
   return Nd;
 }
 
+static bool isFunction(Token *Tok)
+{
+  return (equal(Tok->Next, "("));
+}
+
 // 语法解析入口函数
 // program = (functionDefinition | globalVariable)*
 Obj *parse(Token *Tok)
@@ -807,7 +830,15 @@ Obj *parse(Token *Tok)
   while (Tok->Kind != TK_EOF)
   {
     Type *BaseTy = declspec(&Tok, Tok);
-    Tok = function(Tok, BaseTy);
+    if (isFunction(Tok))
+    {
+      Tok = function(Tok, BaseTy);
+    }
+    else
+    {
+      // 全局变量
+      Tok = globalVariable(Tok, BaseTy);
+    }
   }
 
   return Globals;

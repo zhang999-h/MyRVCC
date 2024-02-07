@@ -71,14 +71,17 @@ static void genAddr(Node *Nd)
     // 变量
     case ND_VAR:
     {
-        // // 偏移量=是两个字母在ASCII码表中的距离加1后乘以8，*8表示每个变量需要八个字节单位的内存
-        // int Offset = (Nd->Name - 'a' + 1) * 8;
-        // printf("  addi a0, fp, %d\n", -Offset);
-        // 偏移量是相对于fp的
-        printf("  # 获取变量%s的栈内地址为%d(fp)\n", Nd->Var->Name,
-               Nd->Var->Offset);
-        printf("  addi a0, fp, %d\n", Nd->Var->Offset);
-
+        if (Nd->Var->IsLocal)
+        { // 偏移量是相对于fp的
+            printf("  # 获取局部变量%s的栈内地址为%d(fp)\n", Nd->Var->Name,
+                   Nd->Var->Offset);
+            printf("  addi a0, fp, %d\n", Nd->Var->Offset);
+        }
+        else
+        {
+            printf("  # 获取全局变量%s的地址\n", Nd->Var->Name);
+            printf("  la a0, %s\n", Nd->Var->Name);
+        }
         return;
     }
         // 解引用*  //当如*y作为左值时
@@ -369,8 +372,25 @@ static void genStmt(Node *Nd)
     errorTok(Nd->Tok, "invalid statement");
 }
 
+static void emitData(Obj *Prog)
+{
+    for (Obj *Var = Prog; Var; Var = Var->Next)
+    {
+        if (Var->IsFunction)
+            continue;
+
+        printf("  # 数据段标签\n");
+        printf("  .data\n");
+        printf("  .globl %s\n", Var->Name);
+        printf("  # 全局变量%s\n", Var->Name);
+        printf("%s:\n", Var->Name);
+        printf("  # 零填充%d位\n", Var->Ty->Size);
+        printf("  .zero %d\n", Var->Ty->Size);
+    }
+}
+
 // 代码生成入口函数，包含代码块的基础信息
-void codegen(Obj *Prog)
+void emitText(Obj *Prog)
 {
     // 为每个函数单独生成代码
     for (Obj *Fn = Prog; Fn; Fn = Fn->Next)
@@ -451,4 +471,15 @@ void codegen(Obj *Prog)
         printf("  ret\n");
     }
     // assert(Depth == 0);
+}
+
+// 代码生成入口函数
+void codegen(Obj *Prog)
+{
+    //   // 计算局部变量的偏移量
+    //   assignLVarOffsets(Prog);
+    // 生成数据
+    emitData(Prog);
+    // 生成代码
+    emitText(Prog);
 }
