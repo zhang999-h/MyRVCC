@@ -387,11 +387,28 @@ static void emitData(Obj *Prog)
 
         printf("  # 数据段标签\n");
         printf("  .data\n");
-        printf("  .globl %s\n", Var->Name);
-        printf("  # 全局变量%s\n", Var->Name);
-        printf("%s:\n", Var->Name);
-        printf("  # 零填充%d位\n", Var->Ty->Size);
-        printf("  .zero %d\n", Var->Ty->Size);
+        // 判断是否有初始值
+        if (Var->InitData)
+        {
+            printf("%s:\n", Var->Name);
+            // 打印出字符串的内容，包括转义字符
+            for (int I = 0; I < Var->Ty->Size; ++I)
+            {
+                char C = Var->InitData[I];
+                if (isprint(C))
+                    printf("  .byte %d\t# 字符：%c\n", C, C);
+                else
+                    printf("  .byte %d\n", C);
+            }
+        }
+        else
+        {
+            printf("  # 全局段%s\n", Var->Name);
+            printf("  .globl %s\n", Var->Name);
+            printf("%s:\n", Var->Name);
+            printf("  # 全局变量零填充%d位\n", Var->Ty->Size);
+            printf("  .zero %d\n", Var->Ty->Size);
+        }
     }
 }
 
@@ -408,6 +425,8 @@ void emitText(Obj *Prog)
         // 声明一个全局main段，同时也是程序入口段
         printf("  # 定义全局%s段\n", Fn->Name);
         printf("  .globl %s\n", Fn->Name);
+        printf("  # 代码段标签\n");
+        printf("  .text\n");
         // main段标签
         printf("\n# =====%s段程序开始===============\n", Fn->Name);
         printf("# %s段标签，也是入口段\n", Fn->Name);

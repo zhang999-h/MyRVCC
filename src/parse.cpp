@@ -128,7 +128,26 @@ static Obj *newLVar(char *Name, Type *Ty)
   Locals = Var;
   return Var;
 }
+// 新增唯一名称
+static char *newUniqueName(void)
+{
+  static int Id = 0;
+  char *Buf = (char *)calloc(1, 20);
+  // 将格式化处理过后的字符串存入Buf
+  sprintf(Buf, ".L..%d", Id++);
+  return Buf;
+}
 
+// 新增匿名全局变量
+static Obj *newAnonGVar(Type *Ty) { return newGVar(newUniqueName(), Ty); }
+
+// 新增字符串字面量
+static Obj *newStringLiteral(char *Str, Type *Ty)
+{
+  Obj *Var = newAnonGVar(Ty);
+  Var->InitData = Str;
+  return Var;
+}
 // 获取标识符
 static char *getIdent(Token *Tok)
 {
@@ -175,7 +194,7 @@ static void createParamLVars(Type *Param)
 // mul = unary ("*" unary | "/" unary)*
 // unary = ("+" | "-" | "*" | "&") unary | postfix
 // postfix = primary ("[" expr "]")*
-// primary = "(" expr ")" | ident func-args? | num |"sizeof" unary |
+// primary = "(" expr ")" | ident func-args? | num |"sizeof" unary | str
 // funcall = ident "(" (assign ("," assign)*)? ")"
 static Obj *function(Token **Rest, Token *Tok);
 static Node *exprStmt(Token **Rest, Token *Tok);
@@ -754,7 +773,7 @@ static Node *postfix(Token **Rest, Token *Tok)
 }
 
 // 解析括号、数字、变量
-// primary = "(" expr ")" | ident func-args? | num | "sizeof" unary |
+// primary = "(" expr ")" | ident func-args? | num | "sizeof" unary | str
 static Node *primary(Token **Rest, Token *Tok)
 {
   // "(" expr ")"
@@ -799,6 +818,12 @@ static Node *primary(Token **Rest, Token *Tok)
     Node *Nd = newNum(Tok->Val, Tok);
     *Rest = Tok->Next;
     return Nd;
+  }
+    // str
+  if (Tok->Kind == TK_STR) {
+    Obj *Var = newStringLiteral(Tok->Str, Tok->Ty);
+    *Rest = Tok->Next;
+    return newVarNode(Var, Tok);
   }
 
   errorTok(Tok, "expected an expression");

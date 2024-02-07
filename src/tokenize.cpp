@@ -2,6 +2,7 @@
 
 char *CurrentInput;
 
+
 Token *newToken(TokenKind kind, char *Start, char *End)
 {
   Token *token = (Token *)malloc(sizeof(Token));
@@ -11,7 +12,23 @@ Token *newToken(TokenKind kind, char *Start, char *End)
   token->Len = End - Start;
   return token;
 }
+// 读取字符串字面量
+static Token *readStringLiteral(char *Start)
+{
+  char *P = Start + 1;
+  // 识别字符串内的所有非"字符
+  for (; *P != '"'; ++P)
+    // 遇到换行符和'\0'则报错
+    if (*P == '\n' || *P == '\0')
+      errorAt(Start, "unclosed string literal");
 
+  Token *Tok = newToken(TK_STR, Start, P + 1);
+  // 构建 char[] 类型
+  Tok->Ty = arrayOf(&TyChar, P - Start);
+  // 拷贝双引号间的内容，结果是\0的char *类型
+  Tok->Str = strndup(Start + 1, P - Start - 1);
+  return Tok;
+}
 // 判断Str是否以SubStr开头
 static bool startsWith(char *Str, const char *SubStr)
 {
@@ -84,7 +101,14 @@ Token *tokenize(char *P)
       ++P;
       continue;
     }
-
+    // 解析字符串字面量
+    if (*P == '"')
+    {
+      Cur->Next = readStringLiteral(P);
+      Cur = Cur->Next;
+      P += Cur->Len;
+      continue;
+    }
     // 解析数字
     if (isdigit(*P))
     {

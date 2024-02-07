@@ -13,6 +13,8 @@
 #include <string.h>
 
 extern char *CurrentInput; // 用来存储输入
+typedef struct Node Node;
+typedef struct Type Type;
 
 // 为每个终结符都设置种类来表示
 typedef enum
@@ -22,9 +24,9 @@ typedef enum
   TK_NUM,     // 数字
   TK_EOF,     // 文件终止符，即文件的最后
   TK_KEYWORD, // 关键字
+  TK_STR,     // 字符串字面量
 } TokenKind;
 
-typedef struct Type Type;
 // 终结符结构体
 typedef struct Token Token;
 struct Token
@@ -34,9 +36,9 @@ struct Token
   int Val;        // 值
   char *Loc;      // 在解析的字符串内的位置
   int Len;        // 长度
+  Type *Ty;       // TK_STR使用
+  char *Str;      // 字符串字面量，包括'\0'
 };
-
-typedef struct Node Node;
 
 // 本地变量  或 函数
 typedef struct Obj Obj;
@@ -57,6 +59,8 @@ struct Obj
   Node *Body;    // 函数体
   Obj *Locals;   // 本地变量
   int StackSize; // 栈大小
+                 // 全局变量
+  char *InitData;
 };
 
 // // 函数
@@ -127,7 +131,7 @@ struct Node
 
 void error(const char *Fmt, ...);
 void errorTok(Token *Tok, char *Fmt, ...);
-
+void errorAt(char *Loc, char *Fmt, ...);
 bool equal(Token *tok, const char *str);
 
 //
