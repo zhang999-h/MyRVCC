@@ -132,10 +132,7 @@ static Obj *newLVar(char *Name, Type *Ty)
 static char *newUniqueName(void)
 {
   static int Id = 0;
-  char *Buf = (char *)calloc(1, 20);
-  // 将格式化处理过后的字符串存入Buf
-  sprintf(Buf, ".L..%d", Id++);
-  return Buf;
+  return format(".L..%d", Id++);
 }
 
 // 新增匿名全局变量
@@ -819,8 +816,9 @@ static Node *primary(Token **Rest, Token *Tok)
     *Rest = Tok->Next;
     return Nd;
   }
-    // str
-  if (Tok->Kind == TK_STR) {
+  // str
+  if (Tok->Kind == TK_STR)
+  {
     Obj *Var = newStringLiteral(Tok->Str, Tok->Ty);
     *Rest = Tok->Next;
     return newVarNode(Var, Tok);

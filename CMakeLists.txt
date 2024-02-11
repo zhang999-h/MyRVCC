@@ -9,4 +9,5 @@ add_executable(MyRVCC
     src/parse.cpp 
     src/error.cpp
     src/type.cpp
+    src/string.cpp
     )

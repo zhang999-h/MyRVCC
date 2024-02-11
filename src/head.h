@@ -183,7 +183,9 @@ Type *copyType(Type *Ty);
 
 // 数组类型
 Type *arrayOf(Type *Base, int Size);
-
+//
+// 字符串
+char *format(char *Fmt, ...);
 // 词法分析
 Token *tokenize(char *P);
 
