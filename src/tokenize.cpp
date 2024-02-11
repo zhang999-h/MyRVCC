@@ -2,7 +2,6 @@
 
 char *CurrentInput;
 
-
 Token *newToken(TokenKind kind, char *Start, char *End)
 {
   Token *token = (Token *)malloc(sizeof(Token));
@@ -12,21 +11,75 @@ Token *newToken(TokenKind kind, char *Start, char *End)
   token->Len = End - Start;
   return token;
 }
+// 读取转义字符
+static int readEscapedChar(char *P)
+{
+  switch (*P)
+  {
+  case 'a': // 响铃（警报）
+    return '\a';
+  case 'b': // 退格
+    return '\b';
+  case 't': // 水平制表符，tab
+    return '\t';
+  case 'n': // 换行
+    return '\n';
+  case 'v': // 垂直制表符
+    return '\v';
+  case 'f': // 换页
+    return '\f';
+  case 'r': // 回车
+    return '\r';
+  // 属于GNU C拓展
+  case 'e': // 转义符
+    return 27;
+  default: // 默认将原字符返回
+    return *P;
+  }
+}
+// 读取到字符串字面量结尾
+static char *stringLiteralEnd(char *P)
+{
+  // 识别字符串内的所有非"字符
+  for (; *P != '"'; ++P)
+  { // 遇到换行符和'\0'则报错
+    if (*P == '\n' || *P == '\0')
+      errorAt(P, "unclosed string literal");
+    if (*P == '\\')
+    {
+      P++;
+    }
+  }
+  return P;
+}
 // 读取字符串字面量
 static Token *readStringLiteral(char *Start)
 {
   char *P = Start + 1;
-  // 识别字符串内的所有非"字符
-  for (; *P != '"'; ++P)
-    // 遇到换行符和'\0'则报错
-    if (*P == '\n' || *P == '\0')
-      errorAt(Start, "unclosed string literal");
+  char *End = stringLiteralEnd(P);
+  // 用来存储最大位数的字符串字面量
+  char *Buf = (char *)calloc(1, End - Start);
+  // 实际的字符位数，一个转义字符为1位
+  int Len = 0;
 
-  Token *Tok = newToken(TK_STR, Start, P + 1);
+  // 将读取后的结果写入Buf
+  for (char *P = Start + 1; P < End; P++)
+  {
+    if (*P == '\\')
+    {
+      Buf[Len++] = readEscapedChar(P + 1);
+      P++;
+    }
+    else
+    {
+      Buf[Len++] = *P;
+    }
+  }
+  Token *Tok = newToken(TK_STR, Start, End + 1);
   // 构建 char[] 类型
-  Tok->Ty = arrayOf(&TyChar, P - Start);
-  // 拷贝双引号间的内容，结果是\0的char *类型
-  Tok->Str = strndup(Start + 1, P - Start - 1);
+  Tok->Ty = arrayOf(&TyChar, Len + 1);
+
+  Tok->Str = Buf;
   return Tok;
 }
 // 判断Str是否以SubStr开头
