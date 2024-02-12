@@ -1,6 +1,8 @@
 #include "head.h"
 
 char *CurrentInput;
+// 输入的文件名
+char *CurrentFilename;
 
 Token *newToken(TokenKind kind, char *Start, char *End)
 {
@@ -52,10 +54,10 @@ static int readEscapedChar(char *&P)
   if (*P == 'x')
   {
     *P++;
-    if (!isxdigit(*P) )
-      {
-        errorAt(P, "invalid Octal escape sequence");
-      }
+    if (!isxdigit(*P))
+    {
+      errorAt(P, "invalid Octal escape sequence");
+    }
     int res = 0;
     int tmp = 0;
     for (; isxdigit(*P); P++)
@@ -198,8 +200,9 @@ static void convertKeywords(Token *Tok)
   }
 }
 
-Token *tokenize(char *P)
+Token *tokenize(char *Filename, char *P)
 {
+  CurrentFilename = Filename;
   CurrentInput = P;
   Token *Head = new Token();
   Token *Cur = Head;
@@ -264,3 +267,58 @@ Token *tokenize(char *P)
   // Head无内容，所以直接返回Next
   return Head->Next;
 }
+
+// 返回指定文件的内容
+static char *readFile(char *Path)
+{
+  FILE *FP;
+
+  if (strcmp(Path, "-") == 0)
+  {
+    // 如果文件名是"-"，那么就从输入中读取
+    FP = stdin;
+  }
+  else
+  {
+    FP = fopen(Path, "r");
+    if (!FP)
+      // errno为系统最后一次的错误代码
+      // strerror以字符串的形式输出错误代码
+      error("cannot open %s: %s", Path, strerror(errno));
+  }
+
+  // 要返回的字符串
+  char *Buf;
+  size_t BufLen;
+  FILE *Out = open_memstream(&Buf, &BufLen);
+
+  // 读取整个文件
+  while (true)
+  {
+    char Buf2[4096];
+    // fread从文件流中读取数据到数组中
+    // 数组指针Buf2，数组元素大小1，数组元素个数4096，文件流指针
+    int N = fread(Buf2, 1, sizeof(Buf2), FP);
+    if (N == 0)
+      break;
+    // 数组指针Buf2，数组元素大小1，实际元素个数N，文件流指针
+    fwrite(Buf2, 1, N, Out);
+  }
+
+  // 对文件完成了读取
+  if (FP != stdin)
+    fclose(FP);
+
+  // 刷新流的输出缓冲区，确保内容都被输出到流中
+  fflush(Out);
+  // 确保最后一行以'\n'结尾
+  if (BufLen == 0 || Buf[BufLen - 1] != '\n')
+    // 将字符输出到流中
+    fputc('\n', Out);
+  fputc('\0', Out);
+  fclose(Out);
+  return Buf;
+}
+
+// 对文件进行词法分析
+Token *tokenizeFile(char *Path) { return tokenize(Path, readFile(Path)); }

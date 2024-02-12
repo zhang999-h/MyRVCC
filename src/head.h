@@ -11,8 +11,10 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 
 extern char *CurrentInput; // 用来存储输入
+extern char *CurrentFilename;
 typedef struct Node Node;
 typedef struct Type Type;
 
@@ -188,8 +190,7 @@ Type *arrayOf(Type *Base, int Size);
 // 字符串
 char *format(char *Fmt, ...);
 // 词法分析
-Token *tokenize(char *P);
-
+Token *tokenizeFile(char *Path);
 // 语法解析入口函数
 Obj *parse(Token *Tok);
 
