@@ -11,10 +11,67 @@ Token *newToken(TokenKind kind, char *Start, char *End)
   token->Len = End - Start;
   return token;
 }
-// 读取转义字符
-static int readEscapedChar(char *P)
+// 返回一位十六进制转十进制
+// hexDigit = [0-9a-fA-F]
+// 16: 0 1 2 3 4 5 6 7 8 9  A  B  C  D  E  F
+// 10: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+static int fromHex(char C)
 {
-  switch (*P)
+  if ('0' <= C && C <= '9')
+    return C - '0';
+  if ('a' <= C && C <= 'f')
+    return C - 'a' + 10;
+  return C - 'A' + 10;
+}
+// 读取转义字符
+static int readEscapedChar(char *&P)
+{
+  if (isdigit(*P))
+  {
+    int res = 0;
+    int tmp = 0;
+    for (int i = 1; i <= 3 && isdigit(*P); i++, P++)
+    {
+      tmp = *P - '0';
+      if (tmp >= 8 && i == 1)
+      {
+        errorAt(P, "invalid Octal escape sequence");
+      }
+      if (tmp >= 8 && i != 1)
+      {
+        return res;
+      }
+      if (res * 8 + tmp > 255)
+      {
+        return res;
+      }
+      res = res * 8 + tmp;
+    }
+    return res;
+  }
+  if (*P == 'x')
+  {
+    *P++;
+    if (!isxdigit(*P) )
+      {
+        errorAt(P, "invalid Octal escape sequence");
+      }
+    int res = 0;
+    int tmp = 0;
+    for (; isxdigit(*P); P++)
+    {
+      tmp = fromHex(*P);
+      if (res * 16 + tmp > 255)
+      {
+        return res;
+      }
+      res = res * 16 + tmp;
+    }
+    return res;
+  }
+  char ch = *P;
+  P++;
+  switch (ch)
   {
   case 'a': // 响铃（警报）
     return '\a';
@@ -34,7 +91,7 @@ static int readEscapedChar(char *P)
   case 'e': // 转义符
     return 27;
   default: // 默认将原字符返回
-    return *P;
+    return ch;
   }
 }
 // 读取到字符串字面量结尾
@@ -63,16 +120,16 @@ static Token *readStringLiteral(char *Start)
   int Len = 0;
 
   // 将读取后的结果写入Buf
-  for (char *P = Start + 1; P < End; P++)
+  for (char *P = Start + 1; P < End;)
   {
     if (*P == '\\')
     {
-      Buf[Len++] = readEscapedChar(P + 1);
-      P++;
+      Buf[Len++] = readEscapedChar(++P);
     }
     else
     {
       Buf[Len++] = *P;
+      P++;
     }
   }
   Token *Tok = newToken(TK_STR, Start, End + 1);
