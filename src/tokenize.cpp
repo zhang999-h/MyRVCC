@@ -1,12 +1,12 @@
 #include "head.h"
 
-char *CurrentInput;
+char* CurrentInput;
 // 输入的文件名
-char *CurrentFilename;
+char* CurrentFilename;
 
-Token *newToken(TokenKind kind, char *Start, char *End)
+Token* newToken(TokenKind kind, char* Start, char* End)
 {
-  Token *token = (Token *)malloc(sizeof(Token));
+  Token* token = (Token*)malloc(sizeof(Token));
   // Token *token=new Token();
   token->Kind = kind;
   token->Loc = Start;
@@ -26,7 +26,7 @@ static int fromHex(char C)
   return C - 'A' + 10;
 }
 // 读取转义字符
-static int readEscapedChar(char *&P)
+static int readEscapedChar(char*& P)
 {
   if (isdigit(*P))
   {
@@ -89,7 +89,7 @@ static int readEscapedChar(char *&P)
     return '\f';
   case 'r': // 回车
     return '\r';
-  // 属于GNU C拓展
+    // 属于GNU C拓展
   case 'e': // 转义符
     return 27;
   default: // 默认将原字符返回
@@ -97,7 +97,7 @@ static int readEscapedChar(char *&P)
   }
 }
 // 读取到字符串字面量结尾
-static char *stringLiteralEnd(char *P)
+static char* stringLiteralEnd(char* P)
 {
   // 识别字符串内的所有非"字符
   for (; *P != '"'; ++P)
@@ -112,17 +112,17 @@ static char *stringLiteralEnd(char *P)
   return P;
 }
 // 读取字符串字面量
-static Token *readStringLiteral(char *Start)
+static Token* readStringLiteral(char* Start)
 {
-  char *P = Start + 1;
-  char *End = stringLiteralEnd(P);
+  char* P = Start + 1;
+  char* End = stringLiteralEnd(P);
   // 用来存储最大位数的字符串字面量
-  char *Buf = (char *)calloc(1, End - Start);
+  char* Buf = (char*)calloc(1, End - Start);
   // 实际的字符位数，一个转义字符为1位
   int Len = 0;
 
   // 将读取后的结果写入Buf
-  for (char *P = Start + 1; P < End;)
+  for (char* P = Start + 1; P < End;)
   {
     if (*P == '\\')
     {
@@ -134,7 +134,7 @@ static Token *readStringLiteral(char *Start)
       P++;
     }
   }
-  Token *Tok = newToken(TK_STR, Start, End + 1);
+  Token* Tok = newToken(TK_STR, Start, End + 1);
   // 构建 char[] 类型
   Tok->Ty = arrayOf(&TyChar, Len + 1);
 
@@ -142,18 +142,18 @@ static Token *readStringLiteral(char *Start)
   return Tok;
 }
 // 判断Str是否以SubStr开头
-static bool startsWith(char *Str, const char *SubStr)
+static bool startsWith(char* Str, const char* SubStr)
 {
   // 比较LHS和RHS的N个字符是否相等
   return strncmp(Str, SubStr, strlen(SubStr)) == 0;
 }
 
 // 读取操作符
-static int readPunct(char *Ptr)
+static int readPunct(char* Ptr)
 {
   // 判断2字节的操作符
   if (startsWith(Ptr, "==") || startsWith(Ptr, "!=") || startsWith(Ptr, "<=") ||
-      startsWith(Ptr, ">="))
+    startsWith(Ptr, ">="))
     return 2;
 
   // 判断1字节的操作符
@@ -175,10 +175,10 @@ static bool isIdent2(char C)
 }
 
 // 判断是否为关键字
-static bool isKeyword(Token *Tok)
+static bool isKeyword(Token* Tok)
 {
   // 关键字列表
-  const char *Kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
+  const char* Kw[] = { "return", "if", "else", "for", "while", "int", "sizeof", "char" };
 
   // 遍历关键字列表匹配
   for (int I = 0; I < sizeof(Kw) / sizeof(*Kw); ++I)
@@ -191,21 +191,21 @@ static bool isKeyword(Token *Tok)
 }
 
 // 将名为“return”的终结符转为KEYWORD
-static void convertKeywords(Token *Tok)
+static void convertKeywords(Token* Tok)
 {
-  for (Token *T = Tok; T->Kind != TK_EOF; T = T->Next)
+  for (Token* T = Tok; T->Kind != TK_EOF; T = T->Next)
   {
     if (isKeyword(T))
       T->Kind = TK_KEYWORD;
   }
 }
 
-Token *tokenize(char *Filename, char *P)
+Token* tokenize(char* Filename, char* P)
 {
   CurrentFilename = Filename;
   CurrentInput = P;
-  Token *Head = new Token();
-  Token *Cur = Head;
+  Token* Head = new Token();
+  Token* Cur = Head;
   while (*P)
   {
     // 跳过所有空白符如：空格、回车
@@ -231,16 +231,15 @@ Token *tokenize(char *Filename, char *P)
       Cur->Next = newToken(TK_NUM, P, P);
       // 指针前进
       Cur = Cur->Next;
-      const char *OldPtr = P;
+      const char* OldPtr = P;
       Cur->Val = strtoul(P, &P, 10);
       Cur->Len = P - OldPtr;
       continue;
     }
     // 解析标记符或关键字
     // [a-zA-Z_][a-zA-Z0-9_]*
-    if (isIdent1(*P))
-    {
-      char *Start = P;
+    if (isIdent1(*P)) {
+      char* Start = P;
       do
       {
         ++P;
@@ -269,9 +268,8 @@ Token *tokenize(char *Filename, char *P)
 }
 
 // 返回指定文件的内容
-static char *readFile(char *Path)
-{
-  FILE *FP;
+static char* readFile(char* Path) {
+  FILE* FP;
 
   if (strcmp(Path, "-") == 0)
   {
@@ -288,13 +286,12 @@ static char *readFile(char *Path)
   }
 
   // 要返回的字符串
-  char *Buf;
+  char* Buf;
   size_t BufLen;
-  FILE *Out = open_memstream(&Buf, &BufLen);
+  FILE* Out = open_memstream(&Buf, &BufLen);
 
   // 读取整个文件
-  while (true)
-  {
+  while (true) {
     char Buf2[4096];
     // fread从文件流中读取数据到数组中
     // 数组指针Buf2，数组元素大小1，数组元素个数4096，文件流指针
@@ -321,4 +318,4 @@ static char *readFile(char *Path)
 }
 
 // 对文件进行词法分析
-Token *tokenizeFile(char *Path) { return tokenize(Path, readFile(Path)); }
+Token* tokenizeFile(char* Path) { return tokenize(Path, readFile(Path)); }

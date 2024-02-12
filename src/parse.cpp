@@ -1,9 +1,9 @@
 #include "head.h"
 // 在解析时，全部的变量实例都被累加到这个列表里。
-Obj *Locals;  // 局部变量
-Obj *Globals; // 全局变量
+Obj* Locals;  // 局部变量
+Obj* Globals; // 全局变量
 
-bool equal(Token *tok, const char *str)
+bool equal(Token* tok, const char* str)
 {
   if (memcmp(tok->Loc, str, tok->Len) == 0 && strlen(str) == tok->Len)
   {
@@ -15,7 +15,7 @@ bool equal(Token *tok, const char *str)
   }
 }
 
-static int getNumber(Token *tok)
+static int getNumber(Token* tok)
 {
   if (tok->Kind != TK_NUM)
     errorTok(tok, "expect a number");
@@ -23,14 +23,14 @@ static int getNumber(Token *tok)
 }
 
 // 跳过指定的Str
-static Token *skip(Token *Tok, const char *Str)
+static Token* skip(Token* Tok, const char* Str)
 {
   if (!equal(Tok, Str))
     errorTok(Tok, "expect '%s'", Str);
   return Tok->Next;
 }
 // 消耗掉指定Token
-bool consume(Token **Rest, Token *Tok, char *Str)
+bool consume(Token** Rest, Token* Tok, char* Str)
 {
   // 存在
   if (equal(Tok, Str))
@@ -44,84 +44,84 @@ bool consume(Token **Rest, Token *Tok, char *Str)
 }
 
 // 新建一个节点
-static Node *newNode(NodeKind Kind, Token *Tok)
+static Node* newNode(NodeKind Kind, Token* Tok)
 {
-  Node *Nd = (Node *)calloc(1, sizeof(Node));
+  Node* Nd = (Node*)calloc(1, sizeof(Node));
   Nd->Kind = Kind;
   Nd->Tok = Tok;
   return Nd;
 }
 
 // 新建一个二叉树节点
-static Node *newBinary(NodeKind Kind, Node *LHS, Node *RHS, Token *Tok)
+static Node* newBinary(NodeKind Kind, Node* LHS, Node* RHS, Token* Tok)
 {
-  Node *Nd = newNode(Kind, Tok);
+  Node* Nd = newNode(Kind, Tok);
   Nd->LHS = LHS;
   Nd->RHS = RHS;
   return Nd;
 }
 
 // 新建一个单叉树
-static Node *newUnary(NodeKind Kind, Node *Expr, Token *Tok)
+static Node* newUnary(NodeKind Kind, Node* Expr, Token* Tok)
 {
-  Node *Nd = newNode(Kind, Tok);
+  Node* Nd = newNode(Kind, Tok);
   Nd->LHS = Expr;
   return Nd;
 }
 
 // 新建一个数字节点
-static Node *newNum(int Val, Token *Tok)
+static Node* newNum(int Val, Token* Tok)
 {
-  Node *Nd = newNode(ND_NUM, Tok);
+  Node* Nd = newNode(ND_NUM, Tok);
   Nd->Val = Val;
   return Nd;
 }
 // 通过名称，查找一个变量
-static Obj *findVar(Token *Tok)
+static Obj* findVar(Token* Tok)
 {
   // 查找Locals变量中是否存在同名变量
-  for (Obj *Var = Locals; Var; Var = Var->Next)
+  for (Obj* Var = Locals; Var; Var = Var->Next)
     // 判断变量名是否和终结符名长度一致，然后逐字比较。
     if (strlen(Var->Name) == Tok->Len &&
-        !strncmp(Tok->Loc, Var->Name, Tok->Len))
+      !strncmp(Tok->Loc, Var->Name, Tok->Len))
       return Var;
   // 查找Globals变量中是否存在同名变量
-  for (Obj *Var = Globals; Var; Var = Var->Next)
+  for (Obj* Var = Globals; Var; Var = Var->Next)
     // 判断变量名是否和终结符名长度一致，然后逐字比较。
     if (strlen(Var->Name) == Tok->Len &&
-        !strncmp(Tok->Loc, Var->Name, Tok->Len))
+      !strncmp(Tok->Loc, Var->Name, Tok->Len))
       return Var;
   return NULL;
 }
 
 // 新变量
-static Node *newVarNode(Obj *Var, Token *Tok)
+static Node* newVarNode(Obj* Var, Token* Tok)
 {
-  Node *Nd = newNode(ND_VAR, Tok);
+  Node* Nd = newNode(ND_VAR, Tok);
   Nd->Var = Var;
   return Nd;
 }
 // 新建变量
-static Obj *newVar(char *Name, Type *Ty)
+static Obj* newVar(char* Name, Type* Ty)
 {
-  Obj *Var = (Obj *)calloc(1, sizeof(Obj));
+  Obj* Var = (Obj*)calloc(1, sizeof(Obj));
   Var->Name = Name; //
   Var->Ty = Ty;     //
   return Var;
 }
 // 在链表中新增一个全局变量
-static Obj *newGVar(char *Name, Type *Ty)
+static Obj* newGVar(char* Name, Type* Ty)
 {
-  Obj *Var = newVar(Name, Ty);
+  Obj* Var = newVar(Name, Ty);
   Var->Next = Globals;
   Globals = Var;
   return Var;
 }
 
 // 在链表中新增一个局部变量
-static Obj *newLVar(char *Name, Type *Ty)
+static Obj* newLVar(char* Name, Type* Ty)
 {
-  Obj *Var = newVar(Name, Ty);
+  Obj* Var = newVar(Name, Ty);
   Var->IsLocal = true;
   // 将变量插入头部
   Var->Next = Locals;
@@ -129,31 +129,31 @@ static Obj *newLVar(char *Name, Type *Ty)
   return Var;
 }
 // 新增唯一名称
-static char *newUniqueName(void)
+static char* newUniqueName(void)
 {
   static int Id = 0;
   return format(".L..%d", Id++);
 }
 
 // 新增匿名全局变量
-static Obj *newAnonGVar(Type *Ty) { return newGVar(newUniqueName(), Ty); }
+static Obj* newAnonGVar(Type* Ty) { return newGVar(newUniqueName(), Ty); }
 
 // 新增字符串字面量
-static Obj *newStringLiteral(char *Str, Type *Ty)
+static Obj* newStringLiteral(char* Str, Type* Ty)
 {
-  Obj *Var = newAnonGVar(Ty);
+  Obj* Var = newAnonGVar(Ty);
   Var->InitData = Str;
   return Var;
 }
 // 获取标识符
-static char *getIdent(Token *Tok)
+static char* getIdent(Token* Tok)
 {
   if (Tok->Kind != TK_IDENT)
     errorTok(Tok, "expected an identifier");
   return strndup(Tok->Loc, Tok->Len); // 参数 Tok->Loc 指向的字符串 前n个字符
 }
 // 将形参添加到Locals
-static void createParamLVars(Type *Param)
+static void createParamLVars(Type* Param)
 {
   if (Param)
   {
@@ -198,46 +198,46 @@ static void createParamLVars(Type *Param)
 //         | str
 //         | num
 // funcall = ident "(" (assign ("," assign)*)? ")"
-static Obj *function(Token **Rest, Token *Tok);
-static Node *exprStmt(Token **Rest, Token *Tok);
-static Node *expr(Token **Rest, Token *Tok);
-static Node *equality(Token **Rest, Token *Tok);
-static Node *relational(Token **Rest, Token *Tok);
-static Node *add(Token **Rest, Token *Tok);
-static Node *mul(Token **Rest, Token *Tok);
-static Node *unary(Token **Rest, Token *Tok);
-static Node *postfix(Token **Rest, Token *Tok);
-static Node *primary(Token **Rest, Token *Tok);
-static Node *assign(Token **Rest, Token *Tok);
-static Node *compoundStmt(Token **Rest, Token *Tok);
-static Type *declspec(Token **Rest, Token *Tok);
-static Type *declarator(Token **Rest, Token *Tok, Type *Ty);
-static Node *declaration(Token **Rest, Token *Tok);
-static Node *funcall(Token **Rest, Token *Tok);
-static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty);
-static Type *funParams(Token **Rest, Token *Tok, Type *Ty);
+static Obj* function(Token** Rest, Token* Tok);
+static Node* exprStmt(Token** Rest, Token* Tok);
+static Node* expr(Token** Rest, Token* Tok);
+static Node* equality(Token** Rest, Token* Tok);
+static Node* relational(Token** Rest, Token* Tok);
+static Node* add(Token** Rest, Token* Tok);
+static Node* mul(Token** Rest, Token* Tok);
+static Node* unary(Token** Rest, Token* Tok);
+static Node* postfix(Token** Rest, Token* Tok);
+static Node* primary(Token** Rest, Token* Tok);
+static Node* assign(Token** Rest, Token* Tok);
+static Node* compoundStmt(Token** Rest, Token* Tok);
+static Type* declspec(Token** Rest, Token* Tok);
+static Type* declarator(Token** Rest, Token* Tok, Type* Ty);
+static Node* declaration(Token** Rest, Token* Tok);
+static Node* funcall(Token** Rest, Token* Tok);
+static Type* typeSuffix(Token** Rest, Token* Tok, Type* Ty);
+static Type* funParams(Token** Rest, Token* Tok, Type* Ty);
 
-static Token *globalVariable(Token *Tok, Type *Basety)
+static Token* globalVariable(Token* Tok, Type* Basety)
 {
   while (!equal(Tok, ";"))
   {
     consume(&Tok, Tok, ",");
-    Type *Ty = declarator(&Tok, Tok, Basety);
+    Type* Ty = declarator(&Tok, Tok, Basety);
     newGVar(getIdent(Ty->Name), Ty);
   }
   Tok = skip(Tok, ";");
   return Tok;
 }
 // functionDefinition = declspec declarator "{" compoundStmt*
-static Token *function(Token *Tok, Type *BaseTy)
+static Token* function(Token* Tok, Type* BaseTy)
 {
   // declarator? ident "(" ")"
-  Type *Ty = declarator(&Tok, Tok, BaseTy);
+  Type* Ty = declarator(&Tok, Tok, BaseTy);
 
   // 清空局部变量Locals
   Locals = NULL;
   // 函数名在Obj->Var中
-  Obj *Fn = newGVar(getIdent(Ty->Name), Ty);
+  Obj* Fn = newGVar(getIdent(Ty->Name), Ty);
   Fn->IsFunction = true;
 
   // 函数参数
@@ -252,7 +252,7 @@ static Token *function(Token *Tok, Type *BaseTy)
 
 // declspec = "int" | "char"
 // declarator specifier
-static Type *declspec(Token **Rest, Token *Tok)
+static Type* declspec(Token** Rest, Token* Tok)
 {
   // "char"
   if (equal(Tok, "char"))
@@ -265,7 +265,7 @@ static Type *declspec(Token **Rest, Token *Tok)
 }
 
 // declarator = "*"* ident typeSuffix
-static Type *declarator(Token **Rest, Token *Tok, Type *Ty)
+static Type* declarator(Token** Rest, Token* Tok, Type* Ty)
 {
   // "*"*
   // 构建所有的（多重）指针
@@ -286,7 +286,7 @@ static Type *declarator(Token **Rest, Token *Tok, Type *Ty)
 }
 
 // typeSuffix = funcParams| ("[" num "]")* | ε
-static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty)
+static Type* typeSuffix(Token** Rest, Token* Tok, Type* Ty)
 {
   // ("(" funcParams? ")")?
   if (equal(Tok, "("))
@@ -309,12 +309,12 @@ static Type *typeSuffix(Token **Rest, Token *Tok, Type *Ty)
 
 // funcParams = "(" (param ("," param)*)* ")"
 // param = declspec declarator
-static Type *funParams(Token **Rest, Token *Tok, Type *Ty)
+static Type* funParams(Token** Rest, Token* Tok, Type* Ty)
 {
   Tok = Tok->Next;
   // 存储形参的链表
   Type Head = {};
-  Type *Cur = &Head;
+  Type* Cur = &Head;
 
   while (!equal(Tok, ")"))
   {
@@ -322,8 +322,8 @@ static Type *funParams(Token **Rest, Token *Tok, Type *Ty)
     // param = declspec declarator
     if (Cur != &Head)
       Tok = skip(Tok, ",");
-    Type *BaseTy = declspec(&Tok, Tok);
-    Type *DeclarTy = declarator(&Tok, Tok, BaseTy);
+    Type* BaseTy = declspec(&Tok, Tok);
+    Type* DeclarTy = declarator(&Tok, Tok, BaseTy);
     // 将类型复制到形参链表一份
     Cur->Next = copyType(DeclarTy);
     Cur = Cur->Next;
@@ -339,14 +339,14 @@ static Type *funParams(Token **Rest, Token *Tok, Type *Ty)
 
 // declaration =
 //    declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
-static Node *declaration(Token **Rest, Token *Tok)
+static Node* declaration(Token** Rest, Token* Tok)
 {
   // declspec
   // 声明的 基础类型
-  Type *Basety = declspec(&Tok, Tok);
+  Type* Basety = declspec(&Tok, Tok);
 
   Node Head = {};
-  Node *Cur = &Head;
+  Node* Cur = &Head;
   // 对变量声明次数计数
   int I = 0;
 
@@ -359,25 +359,25 @@ static Node *declaration(Token **Rest, Token *Tok)
 
     // declarator
     // 声明获取到变量类型，包括变量名
-    Type *Ty = declarator(&Tok, Tok, Basety);
-    Obj *Var = newLVar(getIdent(Ty->Name), Ty);
+    Type* Ty = declarator(&Tok, Tok, Basety);
+    Obj* Var = newLVar(getIdent(Ty->Name), Ty);
 
     // 如果不存在"="则为变量声明，不需要生成节点，已经存储在Locals中了
     if (!equal(Tok, "="))
       continue;
 
     // 解析“=”后面的Token
-    Node *LHS = newVarNode(Var, Ty->Name);
+    Node* LHS = newVarNode(Var, Ty->Name);
     // 解析递归赋值语句
-    Node *RHS = assign(&Tok, Tok->Next);
-    Node *Node = newBinary(ND_ASSIGN, LHS, RHS, Tok);
+    Node* RHS = assign(&Tok, Tok->Next);
+    Node* Node = newBinary(ND_ASSIGN, LHS, RHS, Tok);
     // 存放在表达式语句中
     Cur->Next = newUnary(ND_EXPR_STMT, Node, Tok);
     Cur = Cur->Next;
   }
 
   // 将所有表达式语句，存放在代码块中
-  Node *Nd = newNode(ND_BLOCK, Tok);
+  Node* Nd = newNode(ND_BLOCK, Tok);
   Nd->Body = Head.Next;
   *Rest = Tok->Next;
   return Nd;
@@ -390,13 +390,13 @@ static Node *declaration(Token **Rest, Token *Tok)
 //        | "while" "(" expr ")" stmt
 //        | "{" compoundStmt
 //        | exprStmt
-static Node *stmt(Token **Rest, Token *Tok)
+static Node* stmt(Token** Rest, Token* Tok)
 {
   // "return" expr ";"
   if (equal(Tok, "return"))
   {
     // Node *Nd = newUnary(ND_RETURN, expr(&Tok, Tok->Next));
-    Node *Nd = newNode(ND_RETURN, Tok);
+    Node* Nd = newNode(ND_RETURN, Tok);
     Nd->LHS = expr(&Tok, Tok->Next);
     *Rest = skip(Tok, ";");
     return Nd;
@@ -408,7 +408,7 @@ static Node *stmt(Token **Rest, Token *Tok)
   // "if" "(" expr ")" stmt ("else" stmt)?
   if (equal(Tok, "if"))
   {
-    Node *Nd = newNode(ND_IF, Tok);
+    Node* Nd = newNode(ND_IF, Tok);
     // "(" expr ")"，条件内语句
     Tok = skip(Tok->Next, "(");
     Nd->Cond = expr(&Tok, Tok);
@@ -424,7 +424,7 @@ static Node *stmt(Token **Rest, Token *Tok)
   // "for" "(" exprStmt expr? ";" expr? ")" stmt
   if (equal(Tok, "for"))
   {
-    Node *Nd = newNode(ND_FOR, Tok);
+    Node* Nd = newNode(ND_FOR, Tok);
     Tok = skip(Tok->Next, "(");
 
     Nd->Init = exprStmt(&Tok, Tok);
@@ -443,7 +443,7 @@ static Node *stmt(Token **Rest, Token *Tok)
   // "while" "(" expr ")" stmt
   if (equal(Tok, "while"))
   {
-    Node *Nd = newNode(ND_FOR, Tok);
+    Node* Nd = newNode(ND_FOR, Tok);
     // "("
     Tok = skip(Tok->Next, "(");
     // expr
@@ -459,20 +459,20 @@ static Node *stmt(Token **Rest, Token *Tok)
   return exprStmt(Rest, Tok);
 }
 // 判断是否为类型名
-static bool isTypename(Token *Tok)
+static bool isTypename(Token* Tok)
 {
   return equal(Tok, "char") || equal(Tok, "int");
 }
 
 // 解析复合语句
 // compoundStmt ="{" (declaration | stmt)* "}"
-static Node *compoundStmt(Token **Rest, Token *Tok)
+static Node* compoundStmt(Token** Rest, Token* Tok)
 {
   Tok = skip(Tok, "{");
-  Node *Nd = newNode(ND_BLOCK, Tok);
+  Node* Nd = newNode(ND_BLOCK, Tok);
   // 这里使用了和词法分析类似的单向链表结构
   Node Head = {};
-  Node *Cur = &Head;
+  Node* Cur = &Head;
   // (declaration | stmt)* "}"
   while (!equal(Tok, "}"))
   {
@@ -495,7 +495,7 @@ static Node *compoundStmt(Token **Rest, Token *Tok)
 
 // 解析表达式语句
 // exprStmt = expr ";"
-static Node *exprStmt(Token **Rest, Token *Tok)
+static Node* exprStmt(Token** Rest, Token* Tok)
 {
   // ";"
   if (equal(Tok, ";"))
@@ -506,7 +506,7 @@ static Node *exprStmt(Token **Rest, Token *Tok)
 
   // expr ";"
   // Node *Nd = newUnary(ND_EXPR_STMT, expr(&Tok, Tok));
-  Node *Nd = newNode(ND_EXPR_STMT, Tok);
+  Node* Nd = newNode(ND_EXPR_STMT, Tok);
   Nd->LHS = expr(&Tok, Tok);
   *Rest = skip(Tok, ";");
   return Nd;
@@ -514,14 +514,13 @@ static Node *exprStmt(Token **Rest, Token *Tok)
 
 // 解析表达式
 // expr = assign
-static Node *expr(Token **Rest, Token *Tok) { return assign(Rest, Tok); }
+static Node* expr(Token** Rest, Token* Tok) { return assign(Rest, Tok); }
 
 // 解析赋值
 // assign = equality ("=" assign)?
-static Node *assign(Token **Rest, Token *Tok)
-{
+static Node* assign(Token** Rest, Token* Tok) {
   // equality
-  Node *Nd = equality(&Tok, Tok);
+  Node* Nd = equality(&Tok, Tok);
 
   // 可能存在递归赋值，如a=b=1
   // ("=" assign)?
@@ -536,15 +535,14 @@ static Node *assign(Token **Rest, Token *Tok)
 }
 // 解析相等性
 // equality = relational ("==" relational | "!=" relational)*
-static Node *equality(Token **Rest, Token *Tok)
-{
+static Node* equality(Token** Rest, Token* Tok) {
   // relational
-  Node *Nd = relational(&Tok, Tok);
+  Node* Nd = relational(&Tok, Tok);
 
   // ("==" relational | "!=" relational)*
   while (true)
   {
-    Token *Start = Tok;
+    Token* Start = Tok;
     // "==" relational
     if (equal(Tok, "=="))
     {
@@ -566,15 +564,13 @@ static Node *equality(Token **Rest, Token *Tok)
 
 // 解析比较关系
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-static Node *relational(Token **Rest, Token *Tok)
-{
+static Node* relational(Token** Rest, Token* Tok) {
   // add
-  Node *Nd = add(&Tok, Tok);
+  Node* Nd = add(&Tok, Tok);
 
   // ("<" add | "<=" add | ">" add | ">=" add)*
-  while (true)
-  {
-    Token *Start = Tok;
+  while (true) {
+    Token* Start = Tok;
     // "<" add
     if (equal(Tok, "<"))
     {
@@ -610,8 +606,7 @@ static Node *relational(Token **Rest, Token *Tok)
   }
 }
 // 解析各种加法
-static Node *newAdd(Node *LHS, Node *RHS, Token *Tok)
-{
+static Node* newAdd(Node* LHS, Node* RHS, Token* Tok) {
   // 为左右部添加类型
   addType(LHS);
   addType(RHS);
@@ -627,7 +622,7 @@ static Node *newAdd(Node *LHS, Node *RHS, Token *Tok)
   // 将 num + ptr 转换为 ptr + num
   if (!LHS->Ty->Base && RHS->Ty->Base)
   {
-    Node *Tmp = LHS;
+    Node* Tmp = LHS;
     LHS = RHS;
     RHS = Tmp;
   }
@@ -639,8 +634,7 @@ static Node *newAdd(Node *LHS, Node *RHS, Token *Tok)
 }
 
 // 解析各种减法
-static Node *newSub(Node *LHS, Node *RHS, Token *Tok)
-{
+static Node* newSub(Node* LHS, Node* RHS, Token* Tok) {
   // 为左右部添加类型
   addType(LHS);
   addType(RHS);
@@ -654,16 +648,15 @@ static Node *newSub(Node *LHS, Node *RHS, Token *Tok)
   {
     RHS = newBinary(ND_MUL, RHS, newNum(LHS->Ty->Size, Tok), Tok);
     addType(RHS);
-    Node *Nd = newBinary(ND_SUB, LHS, RHS, Tok);
+    Node* Nd = newBinary(ND_SUB, LHS, RHS, Tok);
     // 节点类型为指针
     Nd->Ty = LHS->Ty;
     return Nd;
   }
 
   // ptr - ptr，返回两指针间有多少元素
-  if (LHS->Ty->Base && RHS->Ty->Base)
-  {
-    Node *Nd = newBinary(ND_SUB, LHS, RHS, Tok);
+  if (LHS->Ty->Base && RHS->Ty->Base) {
+    Node* Nd = newBinary(ND_SUB, LHS, RHS, Tok);
     Nd->Ty = &TyInt;
     return newBinary(ND_DIV, Nd, newNum(8, Tok), Tok);
   }
@@ -673,15 +666,14 @@ static Node *newSub(Node *LHS, Node *RHS, Token *Tok)
 }
 // 解析加减
 // add = mul ("+" mul | "-" mul)*
-static Node *add(Token **Rest, Token *Tok)
-{
+static Node* add(Token** Rest, Token* Tok) {
   // mul
-  Node *Nd = mul(&Tok, Tok);
+  Node* Nd = mul(&Tok, Tok);
 
   // ("+" mul | "-" mul)*
   while (true)
   {
-    Token *Start = Tok;
+    Token* Start = Tok;
     // "+" mul
     if (equal(Tok, "+"))
     {
@@ -705,15 +697,14 @@ static Node *add(Token **Rest, Token *Tok)
 
 // 解析乘除
 // mul = unary ("*" unary | "/" unary)*
-static Node *mul(Token **Rest, Token *Tok)
-{
+static Node* mul(Token** Rest, Token* Tok) {
   // unary
-  Node *Nd = unary(&Tok, Tok);
+  Node* Nd = unary(&Tok, Tok);
 
   // ("*" unary | "/" unary)*
   while (true)
   {
-    Token *Start = Tok;
+    Token* Start = Tok;
     // "*" unary
     if (equal(Tok, "*"))
     {
@@ -734,8 +725,7 @@ static Node *mul(Token **Rest, Token *Tok)
 }
 
 // unary = ("+" | "-" | "*" | "&") unary | postfix
-static Node *unary(Token **Rest, Token *Tok)
-{
+static Node* unary(Token** Rest, Token* Tok) {
   // "+" unary
   if (equal(Tok, "+"))
     return unary(Rest, Tok->Next);
@@ -756,17 +746,17 @@ static Node *unary(Token **Rest, Token *Tok)
 }
 
 // postfix = primary ("[" expr "]")*
-static Node *postfix(Token **Rest, Token *Tok)
+static Node* postfix(Token** Rest, Token* Tok)
 {
   // primary
-  Node *Nd = primary(&Tok, Tok);
+  Node* Nd = primary(&Tok, Tok);
 
   // ("[" expr "]")*
   while (equal(Tok, "["))
   {
     // x[y] 等价于 *(x+y)
-    Token *Start = Tok;
-    Node *Idx = expr(&Tok, Tok->Next);
+    Token* Start = Tok;
+    Node* Idx = expr(&Tok, Tok->Next);
     Tok = skip(Tok, "]");
     Nd = newUnary(ND_DEREF, newAdd(Nd, Idx, Start), Start);
   }
@@ -781,13 +771,13 @@ static Node *postfix(Token **Rest, Token *Tok)
 //         | ident funcArgs?
 //         | str
 //         | num
-static Node *primary(Token **Rest, Token *Tok)
+static Node* primary(Token** Rest, Token* Tok)
 {
   // "(" "{" stmt+ "}" ")"
   if (equal(Tok, "(") && equal(Tok->Next, "{"))
   {
     // This is a GNU statement expresssion.
-    Node *Nd = newNode(ND_STMT_EXPR, Tok);
+    Node* Nd = newNode(ND_STMT_EXPR, Tok);
     Nd->Body = compoundStmt(&Tok, Tok->Next)->Body;
     *Rest = skip(Tok, ")");
     return Nd;
@@ -795,14 +785,14 @@ static Node *primary(Token **Rest, Token *Tok)
   // "(" expr ")"
   if (equal(Tok, "("))
   {
-    Node *Nd = expr(&Tok, Tok->Next);
+    Node* Nd = expr(&Tok, Tok->Next);
     *Rest = skip(Tok, ")");
     return Nd;
   }
   // "sizeof" unary
   if (equal(Tok, "sizeof"))
   {
-    Node *Nd = unary(Rest, Tok->Next);
+    Node* Nd = unary(Rest, Tok->Next);
     addType(Nd);
     return newNum(Nd->Ty->Size, Tok);
   }
@@ -821,7 +811,7 @@ static Node *primary(Token **Rest, Token *Tok)
     }
     // ident
     // 查找变量
-    Obj *Var = findVar(Tok);
+    Obj* Var = findVar(Tok);
     // 如果变量不存在，就error
     if (!Var)
       errorTok(Tok, "undefined variable");
@@ -831,14 +821,14 @@ static Node *primary(Token **Rest, Token *Tok)
   // num
   if (Tok->Kind == TK_NUM)
   {
-    Node *Nd = newNum(Tok->Val, Tok);
+    Node* Nd = newNum(Tok->Val, Tok);
     *Rest = Tok->Next;
     return Nd;
   }
   // str
   if (Tok->Kind == TK_STR)
   {
-    Obj *Var = newStringLiteral(Tok->Str, Tok->Ty);
+    Obj* Var = newStringLiteral(Tok->Str, Tok->Ty);
     *Rest = Tok->Next;
     return newVarNode(Var, Tok);
   }
@@ -849,14 +839,13 @@ static Node *primary(Token **Rest, Token *Tok)
 }
 
 // funcall = ident "(" (assign ("," assign)*)? ")"
-static Node *funcall(Token **Rest, Token *Tok)
-{
-  Node *Nd = newNode(ND_FUNCALL, Tok);
+static Node* funcall(Token** Rest, Token* Tok) {
+  Node* Nd = newNode(ND_FUNCALL, Tok);
   // ident
   Nd->FuncName = strndup(Tok->Loc, Tok->Len);
   Tok = skip(Tok->Next, "(");
   Node head = {};
-  Node *tmp = &head, args;
+  Node* tmp = &head, args;
 
   while (!equal(Tok, ")"))
   {
@@ -869,20 +858,17 @@ static Node *funcall(Token **Rest, Token *Tok)
   return Nd;
 }
 
-static bool isFunction(Token *Tok)
-{
+static bool isFunction(Token* Tok) {
   return (equal(Tok->Next, "("));
 }
 
 // 语法解析入口函数
 // program = (functionDefinition | globalVariable)*
-Obj *parse(Token *Tok)
-{
+Obj* parse(Token* Tok) {
   Globals = NULL;
 
-  while (Tok->Kind != TK_EOF)
-  {
-    Type *BaseTy = declspec(&Tok, Tok);
+  while (Tok->Kind != TK_EOF) {
+    Type* BaseTy = declspec(&Tok, Tok);
     if (isFunction(Tok))
     {
       Tok = function(Tok, BaseTy);

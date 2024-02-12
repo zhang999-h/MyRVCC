@@ -3,7 +3,7 @@
 // 输出错误信息
 // static文件内可以访问的函数
 // Fmt为传入的字符串， ... 为可变参数，表示Fmt后面所有的参数
-void error(const char *Fmt, ...)
+void error(const char* Fmt, ...)
 {
   // 定义一个va_list变量
   va_list VA;
@@ -36,9 +36,9 @@ void error(const char *Fmt, ...)
 // 输出例如下面的错误，并退出
 // foo.c:10: x = y + 1;
 //               ^ <错误信息>
-static void verrorAt(char *Loc, char *Fmt, va_list VA){
-    // 查找包含loc的行
-  char *Line = Loc;
+static void verrorAt(char* Loc, char* Fmt, va_list VA) {
+  // 查找包含loc的行
+  char* Line = Loc;
   // Line递减到当前行的最开始的位置
   // Line<CurrentInput, 判断是否读取到文件最开始的位置
   // Line[-1] != '\n'，Line字符串前一个字符是否为换行符（上一行末尾）
@@ -46,13 +46,13 @@ static void verrorAt(char *Loc, char *Fmt, va_list VA){
     Line--;
 
   // End递增到行尾的换行符
-  char *End = Loc;
+  char* End = Loc;
   while (*End != '\n')
     End++;
 
   // 获取行号
   int LineNo = 1;
-  for (char *P = CurrentInput; P < Line; P++)
+  for (char* P = CurrentInput; P < Line; P++)
     // 遇到换行符则行号+1
     if (*P == '\n')
       LineNo++;
@@ -74,7 +74,7 @@ static void verrorAt(char *Loc, char *Fmt, va_list VA){
 }
 
 // 字符解析出错
-void errorAt(char *Loc, char *Fmt, ...) {
+void errorAt(char* Loc, char* Fmt, ...) {
   va_list VA;
   va_start(VA, Fmt);
   verrorAt(Loc, Fmt, VA);
@@ -82,7 +82,7 @@ void errorAt(char *Loc, char *Fmt, ...) {
 }
 
 // Tok解析出错
-void errorTok(Token *Tok, char *Fmt, ...) {
+void errorTok(Token* Tok, char* Fmt, ...) {
   va_list VA;
   va_start(VA, Fmt);
   verrorAt(Tok->Loc, Fmt, VA);

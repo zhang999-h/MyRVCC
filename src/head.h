@@ -13,8 +13,8 @@
 #include <string.h>
 #include <errno.h>
 
-extern char *CurrentInput; // 用来存储输入
-extern char *CurrentFilename;
+extern char* CurrentInput; // 用来存储输入
+extern char* CurrentFilename;
 typedef struct Node Node;
 typedef struct Type Type;
 
@@ -34,21 +34,21 @@ typedef struct Token Token;
 struct Token
 {
   TokenKind Kind; // 种类
-  Token *Next;    // 指向下一终结符
+  Token* Next;    // 指向下一终结符
   int Val;        // 值
-  char *Loc;      // 在解析的字符串内的位置
+  char* Loc;      // 在解析的字符串内的位置
   int Len;        // 长度
-  Type *Ty;       // TK_STR使用
-  char *Str;      // 字符串字面量，包括'\0'
+  Type* Ty;       // TK_STR使用
+  char* Str;      // 字符串字面量，包括'\0'
 };
 
 // 本地变量  或 函数
 typedef struct Obj Obj;
 struct Obj
 {
-  Obj *Next;    // 指向下一对象
-  char *Name;   // 变量名
-  Type *Ty;     // 变量类型
+  Obj* Next;    // 指向下一对象
+  char* Name;   // 变量名
+  Type* Ty;     // 变量类型
   bool IsLocal; // 是 局部或全局 变量
 
   // 局部变量
@@ -57,12 +57,12 @@ struct Obj
   bool IsFunction;
 
   // 函数
-  Obj *Params;   // 形参
-  Node *Body;    // 函数体
-  Obj *Locals;   // 本地变量
+  Obj* Params;   // 形参
+  Node* Body;    // 函数体
+  Obj* Locals;   // 本地变量
   int StackSize; // 栈大小
-                 // 全局变量
-  char *InitData;
+  // 全局变量
+  char* InitData;
 };
 
 // // 函数
@@ -106,36 +106,36 @@ typedef enum
 // AST中二叉树节点
 struct Node
 {
-  Node *Next;    // 下一节点，指代下一语句
+  Node* Next;    // 下一节点，指代下一语句
   NodeKind Kind; // 节点种类
-  Type *Ty;      // 节点中数据的类型
+  Type* Ty;      // 节点中数据的类型
 
-  Node *LHS; // 左部，left-hand side
-  Node *RHS; // 右部，right-hand side
+  Node* LHS; // 左部，left-hand side
+  Node* RHS; // 右部，right-hand side
   // char Name;     // 存储ND_VAR的字符串
-  Obj *Var; // 存储ND_VAR种类的变量
+  Obj* Var; // 存储ND_VAR种类的变量
   int Val;  // 存储ND_NUM种类的值
   // 代码块
-  Node *Body;
+  Node* Body;
   // "if"语句
   // "if"语句 或者 "for"语句
-  Node *Cond; // 条件内的表达式
-  Node *Then; // 符合条件后的语句，for语句的代码块也在Then中
-  Node *Els;  // 不符合条件后的语句
-  Node *Init; // 初始化语句for的初始化语句
-  Node *Inc;  // 递增语句for的递增
+  Node* Cond; // 条件内的表达式
+  Node* Then; // 符合条件后的语句，for语句的代码块也在Then中
+  Node* Els;  // 不符合条件后的语句
+  Node* Init; // 初始化语句for的初始化语句
+  Node* Inc;  // 递增语句for的递增
 
   // 函数调用
-  char *FuncName; // 函数名
-  Node *Args;     // 函数参数
+  char* FuncName; // 函数名
+  Node* Args;     // 函数参数
 
-  Token *Tok; // 节点对应的终结符
+  Token* Tok; // 节点对应的终结符
 };
 
-void error(const char *Fmt, ...);
-void errorTok(Token *Tok, char *Fmt, ...);
-void errorAt(char *Loc, char *Fmt, ...);
-bool equal(Token *tok, const char *str);
+void error(const char* Fmt, ...);
+void errorTok(Token* Tok, char* Fmt, ...);
+void errorAt(char* Loc, char* Fmt, ...);
+bool equal(Token* tok, const char* str);
 
 //
 // 类型系统
@@ -155,16 +155,16 @@ struct Type
 {
   TypeKind Kind; // 种类
   int Size;      // 大小, sizeof返回的值
-  Type *Base;    // 指向的类型
+  Type* Base;    // 指向的类型
 
   // 数组
   int ArrayLen; // 数组长度, 元素总个数
   // 变量名
-  Token *Name;
+  Token* Name;
   // 函数类型
-  Type *ReturnTy; // 函数返回的类型
-  Type *Params;   // 形参
-  Type *Next;     // 下一类型
+  Type* ReturnTy; // 函数返回的类型
+  Type* Params;   // 形参
+  Type* Next;     // 下一类型
 };
 
 // 声明全局变量，定义在type.c中。
@@ -172,29 +172,29 @@ extern Type TyInt;
 extern Type TyChar;
 
 // 判断是否为整型
-bool isInteger(Type *TY);
+bool isInteger(Type* TY);
 // 为节点内的所有节点添加类型
-void addType(Node *Nd);
+void addType(Node* Nd);
 
 // 函数类型
-Type *funcType(Type *ReturnTy);
+Type* funcType(Type* ReturnTy);
 
-Type *pointerTo(Type *Base);
+Type* pointerTo(Type* Base);
 
 // 复制类型
-Type *copyType(Type *Ty);
+Type* copyType(Type* Ty);
 
 // 数组类型
-Type *arrayOf(Type *Base, int Size);
+Type* arrayOf(Type* Base, int Size);
 //
 // 字符串
-char *format(char *Fmt, ...);
+char* format(char* Fmt, ...);
 // 词法分析
-Token *tokenizeFile(char *Path);
+Token* tokenizeFile(char* Path);
 // 语法解析入口函数
-Obj *parse(Token *Tok);
+Obj* parse(Token* Tok);
 
 // 代码生成入口函数
-void codegen(Obj *Prog);
+void codegen(Obj* Prog);
 
 #endif

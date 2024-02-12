@@ -1,6 +1,6 @@
 #include "head.h"
 
-int main(int Argc, char **Argv)
+int main(int Argc, char** Argv)
 {
   if (Argc != 2)
   {
@@ -11,9 +11,9 @@ int main(int Argc, char **Argv)
     error("%s: invalid number of arguments", Argv[0]);
   }
   // 解析Argv[1]，生成终结符流
-  Token *Tok = tokenizeFile(Argv[1]);
+  Token* Tok = tokenizeFile(Argv[1]);
   // 解析终结符流
-  Obj *Prog = parse(Tok);
+  Obj* Prog = parse(Tok);
   // 生成代码
   codegen(Prog);
 

@@ -1,16 +1,16 @@
 #include "head.h"
 
 // (Type){...}构造了一个复合字面量，相当于Type的匿名变量。
-Type TyInt = {TY_INT, 8};
-Type TyChar = {TY_CHAR, 1};
+Type TyInt = { TY_INT, 8 };
+Type TyChar = { TY_CHAR, 1 };
 
 // 判断Type是否为int类型
-bool isInteger(Type *Ty) { return Ty->Kind == TY_INT || Ty->Kind == TY_CHAR; }
+bool isInteger(Type* Ty) { return Ty->Kind == TY_INT || Ty->Kind == TY_CHAR; }
 
 // 指针类型，并且指向基类
-Type *pointerTo(Type *Base)
+Type* pointerTo(Type* Base)
 {
-  Type *Ty = (Type *)calloc(1, sizeof(Type));
+  Type* Ty = (Type*)calloc(1, sizeof(Type));
   Ty->Kind = TY_PTR;
   Ty->Size = 8;
   Ty->Base = Base;
@@ -18,26 +18,26 @@ Type *pointerTo(Type *Base)
 }
 
 // 复制类型
-Type *copyType(Type *Ty)
+Type* copyType(Type* Ty)
 {
-  Type *Ret = (Type *)calloc(1, sizeof(Type));
+  Type* Ret = (Type*)calloc(1, sizeof(Type));
   *Ret = *Ty;
   return Ret;
 }
 
 // 函数类型，并赋返回类型
-Type *funcType(Type *ReturnTy)
+Type* funcType(Type* ReturnTy)
 {
-  Type *Ty = (Type *)calloc(1, sizeof(Type));
+  Type* Ty = (Type*)calloc(1, sizeof(Type));
   Ty->Kind = TY_FUNC;
   Ty->ReturnTy = ReturnTy;
   return Ty;
 }
 
 // 构造数组类型, 传入 数组基类, 元素个数
-Type *arrayOf(Type *Base, int Len)
+Type* arrayOf(Type* Base, int Len)
 {
-  Type *Ty = (Type *)calloc(1, sizeof(Type));
+  Type* Ty = (Type*)calloc(1, sizeof(Type));
   Ty->Kind = TY_ARRAY;
   // 数组大小为所有元素大小之和
   Ty->Size = Base->Size * Len;
@@ -47,7 +47,7 @@ Type *arrayOf(Type *Base, int Len)
 }
 
 // 为节点内的所有节点添加类型
-void addType(Node *Nd)
+void addType(Node* Nd)
 {
   // 判断 节点是否为空 或者 节点类型已经有值，那么就直接返回
   if (!Nd || Nd->Ty)
@@ -63,15 +63,15 @@ void addType(Node *Nd)
   addType(Nd->Inc);
 
   // 访问链表内的所有节点以增加类型
-  for (Node *N = Nd->Body; N; N = N->Next)
+  for (Node* N = Nd->Body; N; N = N->Next)
     addType(N);
 
   // 访问链表内的所有参数节点以增加类型
-  for (Node *N = Nd->Args; N; N = N->Next)
+  for (Node* N = Nd->Args; N; N = N->Next)
     addType(N);
   switch (Nd->Kind)
   {
-  // 将节点类型设为 节点左部的类型
+    // 将节点类型设为 节点左部的类型
   case ND_ADD:
   case ND_SUB:
   case ND_MUL:
@@ -80,31 +80,31 @@ void addType(Node *Nd)
 
     Nd->Ty = Nd->LHS->Ty;
     return;
-  // 将节点类型设为 节点左部的类型
-  // 左部不能是数组节点
+    // 将节点类型设为 节点左部的类型
+    // 左部不能是数组节点
   case ND_ASSIGN:
     if (Nd->LHS->Ty->Kind == TY_ARRAY)
       errorTok(Nd->LHS->Tok, "not an lvalue");
     Nd->Ty = Nd->LHS->Ty;
     return;
-  // 将节点类型设为 int
+    // 将节点类型设为 int
   case ND_EQ:
   case ND_NE:
   case ND_LT:
   case ND_LE:
-  // case ND_VAR:
+    // case ND_VAR:
   case ND_NUM:
   case ND_FUNCALL:
     Nd->Ty = &TyInt;
     return;
-  // 将节点类型设为 变量的类型
+    // 将节点类型设为 变量的类型
   case ND_VAR:
     Nd->Ty = Nd->Var->Ty;
     return;
-  // 将节点类型设为 指针，并指向左部的类型
+    // 将节点类型设为 指针，并指向左部的类型
   case ND_ADDR:
   {
-    Type *Ty = Nd->LHS->Ty;
+    Type* Ty = Nd->LHS->Ty;
     // 左部如果是数组, 则为指向数组基类的指针
     if (Ty->Kind == TY_ARRAY)
       Nd->Ty = pointerTo(Ty->Base);
@@ -123,7 +123,7 @@ void addType(Node *Nd)
   case ND_STMT_EXPR:
     if (Nd->Body)
     {
-      Node *Stmt = Nd->Body;
+      Node* Stmt = Nd->Body;
       while (Stmt->Next)
         Stmt = Stmt->Next;
       if (Stmt->Kind == ND_EXPR_STMT)
