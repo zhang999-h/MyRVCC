@@ -3,7 +3,7 @@
 // 语义分析与代码生成
 //
 static void genExpr(Node *Nd);
-
+static void genStmt(Node *Nd);
 // 记录栈深度
 static int Depth;
 
@@ -147,18 +147,22 @@ static void genExpr(Node *Nd)
     case ND_ADDR:
         genAddr(Nd->LHS);
         return;
-    // // 赋值
-    // case ND_ASSIGN:
-    //     // 左部是左值，保存值到的地址
-    //     genAddr(Nd->LHS);
-    //     push();
-    //     // 右部是右值，为表达式的值
-    //     genExpr(Nd->RHS);
-    //     pop("a1");
-    //     printf("  sd a0, 0(a1)\n");
-    // 因为赋值操作有一个返回值，所以需要一个语句，这就是为什么不用下面的递归
-    // return;
-
+        // // 赋值
+        // case ND_ASSIGN:
+        //     // 左部是左值，保存值到的地址
+        //     genAddr(Nd->LHS);
+        //     push();
+        //     // 右部是右值，为表达式的值
+        //     genExpr(Nd->RHS);
+        //     pop("a1");
+        //     printf("  sd a0, 0(a1)\n");
+        // 因为赋值操作有一个返回值，所以需要一个语句，这就是为什么不用下面的递归
+        // return;
+    // 语句表达式
+    case ND_STMT_EXPR:
+        for (Node *N = Nd->Body; N; N = N->Next)
+            genStmt(N);
+        return;
     // 函数调用
     case ND_FUNCALL:
     {

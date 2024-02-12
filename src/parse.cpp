@@ -179,7 +179,7 @@ static void createParamLVars(Type *Param)
 //        | "if" "(" expr ")" stmt ("else" stmt)?
 //        | "for" "(" exprStmt expr? ";" expr? ")" stmt
 //        | "while" "(" expr ")" stmt
-//        | "{" compoundStmt
+//        | compoundStmt
 //        | exprStmt
 // exprStmt = expr? ";"
 // expr = assign
@@ -191,7 +191,12 @@ static void createParamLVars(Type *Param)
 // mul = unary ("*" unary | "/" unary)*
 // unary = ("+" | "-" | "*" | "&") unary | postfix
 // postfix = primary ("[" expr "]")*
-// primary = "(" expr ")" | ident func-args? | num |"sizeof" unary | str
+// primary = "(" "{" stmt+ "}" ")"
+//         | "(" expr ")"
+//         | "sizeof" unary
+//         | ident funcArgs?
+//         | str
+//         | num
 // funcall = ident "(" (assign ("," assign)*)? ")"
 static Obj *function(Token **Rest, Token *Tok);
 static Node *exprStmt(Token **Rest, Token *Tok);
@@ -770,9 +775,23 @@ static Node *postfix(Token **Rest, Token *Tok)
 }
 
 // 解析括号、数字、变量
-// primary = "(" expr ")" | ident func-args? | num | "sizeof" unary | str
+// primary = "(" "{" stmt+ "}" ")"
+//         | "(" expr ")"
+//         | "sizeof" unary
+//         | ident funcArgs?
+//         | str
+//         | num
 static Node *primary(Token **Rest, Token *Tok)
 {
+  // "(" "{" stmt+ "}" ")"
+  if (equal(Tok, "(") && equal(Tok->Next, "{"))
+  {
+    // This is a GNU statement expresssion.
+    Node *Nd = newNode(ND_STMT_EXPR, Tok);
+    Nd->Body = compoundStmt(&Tok, Tok->Next)->Body;
+    *Rest = skip(Tok, ")");
+    return Nd;
+  }
   // "(" expr ")"
   if (equal(Tok, "("))
   {
