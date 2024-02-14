@@ -67,6 +67,10 @@ assert() {
 #assert 15 '5*(9-6)'
 #assert 17 '1-8/(2*2)+3*6'
 
+# [44] 处理域
+assert 2 'int main() { int x=2; { int x=3; } return x; }'
+assert 2 'int main() { int x=2; { int x=3; } { int y=4; return x; }}'
+assert 3 'int main() { int x=2; { x=3; } return x; }'
 # [43] 支持注释
 assert 2 'int main() { /* return 1; */
              return 2; }'
