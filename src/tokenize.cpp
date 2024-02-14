@@ -214,6 +214,26 @@ Token* tokenize(char* Filename, char* P)
       ++P;
       continue;
     }
+    if (*P == '/') {
+      if (*(P + 1) == '/') {
+        P++;
+        while (*P != '\n' && *P != '\r') {
+          P++;
+        }
+        continue;
+      }
+      if (*(P + 1) == '*') {
+        P++;
+        while (1) {
+          if (*P == '*' && *(P + 1) == '/') {
+            P += 2;
+            break;
+          }
+          P++;
+        }
+        continue;
+      }
+    }
     // 解析字符串字面量
     if (*P == '"')
     {

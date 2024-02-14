@@ -67,7 +67,11 @@ assert() {
 #assert 15 '5*(9-6)'
 #assert 17 '1-8/(2*2)+3*6'
 
-
+# [43] 支持注释
+assert 2 'int main() { /* return 1; */
+             return 2; }'
+assert 2 'int main() { // return 1;
+             return 2; }'
 # [6] 支持一元运算的+ -
 assert 10 'int main(){ return -10+20; }'
 assert 10 'int main(){ return - -10; }'
