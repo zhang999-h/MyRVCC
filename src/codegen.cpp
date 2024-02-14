@@ -6,16 +6,17 @@ static void genExpr(Node* Nd);
 static void genStmt(Node* Nd);
 // 记录栈深度
 static int Depth;
-
+// 输出文件
+static FILE* OutputFile;
 // 输出字符串并换行
-static void printLn(const char *Fmt, ...) {
-  va_list VA;
+static void printLn(const char* Fmt, ...) {
+    va_list VA;
 
-  va_start(VA, Fmt);
-  vprintf(Fmt, VA);
-  va_end(VA);
+    va_start(VA, Fmt);
+     vfprintf(OutputFile, Fmt, VA);
+    va_end(VA);
 
-  printf("\n");
+    fprintf(OutputFile,"\n");
 }
 
 Obj* CurFn;
@@ -507,8 +508,9 @@ void emitText(Obj* Prog)
 }
 
 // 代码生成入口函数
-void codegen(Obj* Prog)
+void codegen(Obj* Prog, FILE* Out)
 {
+    OutputFile = Out;
     //   // 计算局部变量的偏移量
     //   assignLVarOffsets(Prog);
     // 生成数据
