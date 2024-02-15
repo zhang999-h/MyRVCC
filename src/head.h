@@ -102,6 +102,7 @@ typedef enum
   ND_DEREF,     // 解引用 *
   ND_FUNCALL,   // 函数调用
   ND_STMT_EXPR, // 语句表达式
+  ND_COMMA,     // , 逗号
 } NodeKind;
 
 // AST中二叉树节点

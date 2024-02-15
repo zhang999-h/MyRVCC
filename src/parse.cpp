@@ -15,7 +15,7 @@ struct Scope {
   Scope* Next;    // 指向上一级的域
   VarScope* Vars; // 指向当前域内的变量
 };
-Scope SCOPE={};
+Scope SCOPE = {};
 // 所有的域的链表
 static Scope* Scp = &SCOPE;
 // 在解析时，全部的变量实例都被累加到这个列表里。
@@ -217,7 +217,7 @@ static void createParamLVars(Type* Param)
 //        | compoundStmt
 //        | exprStmt
 // exprStmt = expr? ";"
-// expr = assign
+// expr = assign ("," expr)?
 // assign = equality ("=" assign)?
 // equality = relational ("==" relational | "!=" relational)*
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
@@ -552,8 +552,19 @@ static Node* exprStmt(Token** Rest, Token* Tok)
 }
 
 // 解析表达式
-// expr = assign
-static Node* expr(Token** Rest, Token* Tok) { return assign(Rest, Tok); }
+// expr = assign ("," expr)?
+static Node* expr(Token** Rest, Token* Tok) {
+  Node* Nd = assign(&Tok, Tok);
+  // ("=" assign)?
+  if (equal(Tok, ","))
+  {
+    // Nd = newBinary(ND_ASSIGN, Nd, assign(&Tok, Tok->Next));
+    return Nd = newBinary(ND_COMMA, Nd, expr(Rest, Tok->Next), Tok);
+  }
+
+  *Rest = Tok;
+  return Nd;
+}
 
 // 解析赋值
 // assign = equality ("=" assign)?
@@ -888,7 +899,7 @@ static Node* funcall(Token** Rest, Token* Tok) {
 
   while (!equal(Tok, ")"))
   {
-    tmp->Next = expr(&Tok, Tok);
+    tmp->Next = assign(&Tok, Tok);
     tmp = tmp->Next;
     consume(&Tok, Tok, ",");
   }

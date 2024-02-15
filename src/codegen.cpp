@@ -99,6 +99,10 @@ static void genAddr(Node* Nd) {
     case ND_DEREF:
         genExpr(Nd->LHS);
         return;
+    case ND_COMMA:
+        genExpr(Nd->LHS);
+        genAddr(Nd->RHS);
+        return;
     default:
         break;
     }
@@ -189,6 +193,11 @@ static void genExpr(Node* Nd) {
         printLn("  call %s", Nd->FuncName);
         return;
     }
+    // 逗号
+    case ND_COMMA:
+        genExpr(Nd->LHS);
+        genExpr(Nd->RHS);
+        return;
     default:
         break;
     }
