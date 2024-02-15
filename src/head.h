@@ -40,6 +40,7 @@ struct Token
   int Len;        // 长度
   Type* Ty;       // TK_STR使用
   char* Str;      // 字符串字面量，包括'\0'
+  int LineNo;
 };
 
 // 本地变量  或 函数

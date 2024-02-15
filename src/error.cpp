@@ -36,7 +36,7 @@ void error(const char* Fmt, ...)
 // 输出例如下面的错误，并退出
 // foo.c:10: x = y + 1;
 //               ^ <错误信息>
-static void verrorAt(char* Loc, char* Fmt, va_list VA) {
+static void verrorAt(int LineNo, char* Loc, char* Fmt, va_list VA) {
   // 查找包含loc的行
   char* Line = Loc;
   // Line递减到当前行的最开始的位置
@@ -49,13 +49,6 @@ static void verrorAt(char* Loc, char* Fmt, va_list VA) {
   char* End = Loc;
   while (*End != '\n')
     End++;
-
-  // 获取行号
-  int LineNo = 1;
-  for (char* P = CurrentInput; P < Line; P++)
-    // 遇到换行符则行号+1
-    if (*P == '\n')
-      LineNo++;
 
   // 输出 文件名:错误行
   // Indent记录输出了多少个字符
@@ -75,9 +68,13 @@ static void verrorAt(char* Loc, char* Fmt, va_list VA) {
 
 // 字符解析出错
 void errorAt(char* Loc, char* Fmt, ...) {
+  int LineNo = 1;
+  for (char *P = CurrentInput; P < Loc; P++)
+    if (*P == '\n')
+      LineNo++;
   va_list VA;
   va_start(VA, Fmt);
-  verrorAt(Loc, Fmt, VA);
+  verrorAt(LineNo, Loc, Fmt, VA);
   exit(1);
 }
 
@@ -85,6 +82,6 @@ void errorAt(char* Loc, char* Fmt, ...) {
 void errorTok(Token* Tok, char* Fmt, ...) {
   va_list VA;
   va_start(VA, Fmt);
-  verrorAt(Tok->Loc, Fmt, VA);
+  verrorAt(Tok->LineNo, Tok->Loc, Fmt, VA);
   exit(1);
 }

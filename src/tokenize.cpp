@@ -13,6 +13,22 @@ Token* newToken(TokenKind kind, char* Start, char* End)
   token->Len = End - Start;
   return token;
 }
+// 为所有Token添加行号
+static void addLineNumbers(Token* Tok) {
+  char* P = CurrentInput;
+  int N = 1;
+
+  do {
+    if (P == Tok->Loc) {
+      Tok->LineNo = N;
+      Tok = Tok->Next;
+    }
+    if (*P == '\n')
+      N++;
+  } while (*P++);
+}
+
+
 // 返回一位十六进制转十进制
 // hexDigit = [0-9a-fA-F]
 // 16: 0 1 2 3 4 5 6 7 8 9  A  B  C  D  E  F
@@ -283,6 +299,7 @@ Token* tokenize(char* Filename, char* P)
 
   // 解析结束，增加一个EOF，表示终止符。
   Cur->Next = newToken(TK_EOF, P, P);
+  addLineNumbers(Head->Next);
   // Head无内容，所以直接返回Next
   return Head->Next;
 }
