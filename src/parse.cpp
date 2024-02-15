@@ -202,7 +202,7 @@ static void createParamLVars(Type* Param)
 
 // program = (functionDefinition | globalVariable)*
 // functionDefinition = declspec declarator compoundStmt*
-// declspec = "int" | "char"
+// declspec = "int" | "char" | structDecl
 // declarator = "*"* ident typeSuffix
 // typeSuffix = funcParams| ("[" num "]")* | ε
 // funcParams = "(" (param ("," param)*)* ")"
@@ -225,7 +225,9 @@ static void createParamLVars(Type* Param)
 // expr = mul ("+" mul | "-" mul)*
 // mul = unary ("*" unary | "/" unary)*
 // unary = ("+" | "-" | "*" | "&") unary | postfix
-// postfix = primary ("[" expr "]")*
+// structDecl = "{" structMembers
+// structMembers = (declspec declarator (","  declarator)* ";")*
+// postfix = primary ("[" expr "]" | "." ident)*
 // primary = "(" "{" stmt+ "}" ")"
 //         | "(" expr ")"
 //         | "sizeof" unary
@@ -251,6 +253,7 @@ static Node* declaration(Token** Rest, Token* Tok);
 static Node* funcall(Token** Rest, Token* Tok);
 static Type* typeSuffix(Token** Rest, Token* Tok, Type* Ty);
 static Type* funParams(Token** Rest, Token* Tok, Type* Ty);
+static Type* structDecl(Token** Rest, Token* Tok);
 
 static Token* globalVariable(Token* Tok, Type* Basety)
 {
@@ -296,8 +299,19 @@ static Type* declspec(Token** Rest, Token* Tok)
     *Rest = Tok->Next;
     return &TyChar;
   }
-  *Rest = skip(Tok, "int");
-  return &TyInt;
+  //"int"
+  if (equal(Tok, "int"))
+  {
+    *Rest = Tok->Next;
+    return &TyInt;
+  }
+  //structDecl
+  if (equal(Tok, "struct"))
+  {
+    return structDecl(Rest, Tok->Next);
+  }
+  errorTok(Tok, "typename expected");
+  return NULL;
 }
 
 // declarator = "*"* ident typeSuffix
@@ -319,6 +333,70 @@ static Type* declarator(Token** Rest, Token* Tok, Type* Ty)
   Ty->Name = Tok;
   //*Rest = Tok;
   return Ty;
+}
+
+// structMembers = (declspec declarator (","  declarator)* ";")*
+static void structMembers(Token** Rest, Token* Tok, Type* Ty) {
+  Member Head = {};
+  Member* Cur = &Head;
+  while (!equal(Tok, "}")) {
+    Type* BaseTy = declspec(&Tok, Tok);
+    while (!equal(Tok, ";"))
+    {
+      // 第1个变量不必匹配 ","
+      consume(&Tok, Tok, ",");
+      // declarator
+      // 声明获取到变量类型，包括变量名
+      Type* DeclarTy = declarator(&Tok, Tok, BaseTy);
+      Member* mem = (Member*)calloc(1, sizeof(Member));
+      mem->Name = DeclarTy->Name;
+      mem->Ty = DeclarTy;
+      Cur->Next = mem;
+      Cur = Cur->Next;
+    }
+    Tok = skip(Tok, ";");
+  }
+  *Rest = skip(Tok, "}");
+  Ty->Mems = Head.Next;
+}
+
+// structDecl = "{" structMembers
+static Type* structDecl(Token** Rest, Token* Tok) {
+  Tok = skip(Tok, "{");
+  Type* Ty = (Type*)calloc(1, sizeof(Type));
+  Ty->Kind = TY_STRUCT;
+  structMembers(&Tok, Tok, Ty);
+
+  int Offset = 0, Size = 0;
+  for (Member* mem = Ty->Mems;mem;mem = mem->Next) {
+    mem->Offset = Offset;
+    Offset += mem->Ty->Size;
+  }
+  Ty->Size = Offset;
+  *Rest = Tok;
+  return Ty;
+}
+
+// 获取结构体成员
+static Member* getStructMember(Type* Ty, Token* Tok) {
+  for (Member* Mem = Ty->Mems; Mem; Mem = Mem->Next)
+    if (Mem->Name->Len == Tok->Len &&
+      !strncmp(Mem->Name->Loc, Tok->Loc, Tok->Len))
+      return Mem;
+  errorTok(Tok, "no such member");
+  return NULL;
+}
+
+// 构建结构体成员的节点
+static Node* structRef(Node* LHS, Token* Tok) {
+  //需要先增加Type,因为之前没加过
+  addType(LHS);
+  if (LHS->Ty->Kind != TY_STRUCT)
+    errorTok(LHS->Tok, "not a struct");
+
+  Node* Nd = newUnary(ND_MEMBER, LHS, Tok);
+  Nd->Mem = getStructMember(LHS->Ty, Tok);
+  return Nd;
 }
 
 // typeSuffix = funcParams| ("[" num "]")* | ε
@@ -497,7 +575,7 @@ static Node* stmt(Token** Rest, Token* Tok)
 // 判断是否为类型名
 static bool isTypename(Token* Tok)
 {
-  return equal(Tok, "char") || equal(Tok, "int");
+  return equal(Tok, "char") || equal(Tok, "int") || equal(Tok, "struct");
 }
 
 // 解析复合语句
@@ -795,23 +873,32 @@ static Node* unary(Token** Rest, Token* Tok) {
   return postfix(Rest, Tok);
 }
 
-// postfix = primary ("[" expr "]")*
+// postfix = primary ("[" expr "]" | "." ident)*
 static Node* postfix(Token** Rest, Token* Tok)
 {
   // primary
   Node* Nd = primary(&Tok, Tok);
 
-  // ("[" expr "]")*
-  while (equal(Tok, "["))
-  {
-    // x[y] 等价于 *(x+y)
-    Token* Start = Tok;
-    Node* Idx = expr(&Tok, Tok->Next);
-    Tok = skip(Tok, "]");
-    Nd = newUnary(ND_DEREF, newAdd(Nd, Idx, Start), Start);
+  while (true) {
+    if (equal(Tok, "[")) {
+      // x[y] 等价于 *(x+y)
+      Token* Start = Tok;
+      Node* Idx = expr(&Tok, Tok->Next);
+      Tok = skip(Tok, "]");
+      Nd = newUnary(ND_DEREF, newAdd(Nd, Idx, Start), Start);
+      continue;
+    }
+
+    // "." ident
+    if (equal(Tok, ".")) {
+      Nd = structRef(Nd, Tok->Next);
+      Tok = Tok->Next->Next;
+      continue;
+    }
+
+    *Rest = Tok;
+    return Nd;
   }
-  *Rest = Tok;
-  return Nd;
 }
 
 // 解析括号、数字、变量

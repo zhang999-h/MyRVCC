@@ -17,6 +17,7 @@ extern char* CurrentInput; // 用来存储输入
 extern char* CurrentFilename;
 typedef struct Node Node;
 typedef struct Type Type;
+typedef struct Member Member;
 
 // 为每个终结符都设置种类来表示
 typedef enum
@@ -103,6 +104,7 @@ typedef enum
   ND_FUNCALL,   // 函数调用
   ND_STMT_EXPR, // 语句表达式
   ND_COMMA,     // , 逗号
+  ND_MEMBER,    // . 结构体成员访问
 } NodeKind;
 
 // AST中二叉树节点
@@ -132,6 +134,8 @@ struct Node
   Node* Args;     // 函数参数
 
   Token* Tok; // 节点对应的终结符
+  // 结构体成员访问
+  Member* Mem;
 };
 
 void error(const char* Fmt, ...);
@@ -151,6 +155,7 @@ typedef enum
   TY_PTR,   // 指针
   TY_FUNC,  // 函数
   TY_ARRAY, // 数组
+  TY_STRUCT, // 结构体
 } TypeKind;
 
 struct Type
@@ -167,8 +172,16 @@ struct Type
   Type* ReturnTy; // 函数返回的类型
   Type* Params;   // 形参
   Type* Next;     // 下一类型
+    // 结构体
+  Member *Mems;
 };
-
+// 结构体成员
+struct Member {
+  Member* Next; // 下一成员
+  Type* Ty;     // 类型
+  Token* Name;  // 名称
+  int Offset;   // 偏移量
+};
 // 声明全局变量，定义在type.c中。
 extern Type TyInt;
 extern Type TyChar;
