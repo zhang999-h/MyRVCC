@@ -13,10 +13,10 @@ static void printLn(const char* Fmt, ...) {
     va_list VA;
 
     va_start(VA, Fmt);
-     vfprintf(OutputFile, Fmt, VA);
+    vfprintf(OutputFile, Fmt, VA);
     va_end(VA);
 
-    fprintf(OutputFile,"\n");
+    fprintf(OutputFile, "\n");
 }
 
 Obj* CurFn;
@@ -119,6 +119,9 @@ static void assignLVarOffsets(Obj* Prog) {
 }
 // 生成表达式
 static void genExpr(Node* Nd) {
+    // .loc 文件编号 行号
+    printLn("  .loc 1 %d", Nd->Tok->LineNo);
+
     switch (Nd->Kind)
     {
         // 加载数字到a0
@@ -285,6 +288,8 @@ static void genExpr(Node* Nd) {
 // 生成语句
 static void genStmt(Node* Nd)
 {
+    // .loc 文件编号 行号
+    printLn("  .loc 1 %d", Nd->Tok->LineNo);
     switch (Nd->Kind)
     {
         // 生成return语句
