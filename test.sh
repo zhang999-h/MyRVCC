@@ -67,8 +67,10 @@ assert() {
 #assert 15 '5*(9-6)'
 #assert 17 '1-8/(2*2)+3*6'
 
-#'int main() { return }'
-
+#    'int main() { return }'
+  # [53] 支持->操作符
+  assert 3 'int main() { return ({ struct t {char a;} x; struct t *y = &x; x.a=3; y->a; });}' ;
+  assert 3 'int main() { return ({ struct t {char a;} x; struct t *y = &x; y->a=3; x.a; });}' ;
   #[52] 支持结构体标签
   assert 16 'int main() { struct t {int a; int b;} x; struct t y;  return sizeof(y);}'
   assert 16 'int main() {struct t {int a; int b;}; struct t y;  return sizeof(y);}'

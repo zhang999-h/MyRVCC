@@ -253,7 +253,7 @@ static void createParamLVars(Type* Param)
 // unary = ("+" | "-" | "*" | "&") unary | postfix
 // structDecl = "{" structMembers
 // structMembers = (declspec declarator (","  declarator)* ";")*
-// postfix = primary ("[" expr "]" | "." ident)*
+// postfix = primary ("[" expr "]" | "." ident)* | "->" ident)*
 // primary = "(" "{" stmt+ "}" ")"
 //         | "(" expr ")"
 //         | "sizeof" unary
@@ -920,7 +920,7 @@ static Node* unary(Token** Rest, Token* Tok) {
   return postfix(Rest, Tok);
 }
 
-// postfix = primary ("[" expr "]" | "." ident)*
+// postfix = primary ("[" expr "]" | "." ident)* | "->" ident)*
 static Node* postfix(Token** Rest, Token* Tok)
 {
   // primary
@@ -943,6 +943,13 @@ static Node* postfix(Token** Rest, Token* Tok)
       continue;
     }
 
+    // "->" ident
+    if(equal(Tok,"->")){
+      // x->y 等价于 (*x).y
+      Nd = newUnary(ND_DEREF,Nd,Tok);
+      Nd = structRef(Nd,Tok->Next);
+      Tok = Tok->Next->Next;
+    }
     *Rest = Tok;
     return Nd;
   }
