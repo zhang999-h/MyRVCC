@@ -68,8 +68,14 @@ assert() {
 #assert 17 '1-8/(2*2)+3*6'
 
 #'int main() { return }'
+
+  #[52] 支持结构体标签
+  assert 16 'int main() { struct t {int a; int b;} x; struct t y;  return sizeof(y);}'
+  assert 16 'int main() {struct t {int a; int b;}; struct t y;  return sizeof(y);}'
+  assert 2 'int main() { return ({ struct t {char a[2];}; { struct t {char a[4];}; } struct t y; sizeof(y); }); }'
+  assert 3 'int main() { return ({ struct t {int x;}; int t=1; struct t y; y.x=2; t+y.x; }) ;}'
+
 # [51] 对齐局部变量
-  
   assert 1 'int main() { int x; char y; int z; char *a=&y; char *b=&z; return b-a;}'
   assert 15 'int main() { int x; int y; char z; char *a=&y; char *b=&z;  return b-a; }'
 #50 对齐结构体成员变量

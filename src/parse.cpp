@@ -8,13 +8,23 @@ struct VarScope {
   char* Name;     // 变量名称
   Obj* Var;       // 对应的变量
 };
-
+// 结构体标签的域
+typedef struct TagScope TagScope;
+struct TagScope {
+  TagScope* Next; // 下一标签域
+  char* Name;     // 域名称
+  Type* Ty;       // 域类型
+};
 // 表示一个块域
 typedef struct Scope Scope;
 struct Scope {
   Scope* Next;    // 指向上一级的域
+  // C有两个域：变量域，结构体标签域
   VarScope* Vars; // 指向当前域内的变量
+  TagScope* Tags; // 指向当前域内的结构体标签
 };
+
+
 Scope SCOPE = {};
 // 所有的域的链表
 static Scope* Scp = &SCOPE;
@@ -41,6 +51,22 @@ static VarScope* pushScope(char* Name, Obj* Var) {
   S->Next = Scp->Vars;
   Scp->Vars = S;
   return S;
+}
+
+// 通过Token查找标签
+static Type* findTag(Token* Tok) {
+  for (Scope* S = Scp; S; S = S->Next)
+    for (TagScope* S2 = S->Tags; S2; S2 = S2->Next)
+      if (equal(Tok, S2->Name))
+        return S2->Ty;
+  return NULL;
+}
+static void pushTagScope(Token* Tok, Type* Ty) {
+  TagScope* S = (TagScope*)calloc(1, sizeof(TagScope));
+  S->Name = strndup(Tok->Loc, Tok->Len);
+  S->Ty = Ty;
+  S->Next = Scp->Tags;
+  Scp->Tags = S;
 }
 bool equal(Token* tok, const char* str)
 {
@@ -362,6 +388,21 @@ static void structMembers(Token** Rest, Token* Tok, Type* Ty) {
 
 // structDecl = "{" structMembers
 static Type* structDecl(Token** Rest, Token* Tok) {
+  // 读取结构体标签
+  Token* Tag = NULL;
+  if (Tok->Kind == TK_IDENT) {
+    Tag = Tok;
+    Tok = Tok->Next;
+  }
+
+  if (Tag && !equal(Tok, "{")) {
+    Type* Ty = findTag(Tag);
+    if (!Ty)
+      errorTok(Tag, "unknown struct type");
+    *Rest = Tok;
+    return Ty;
+  }
+  //结构体成员定义
   Tok = skip(Tok, "{");
   Type* Ty = (Type*)calloc(1, sizeof(Type));
   Ty->Kind = TY_STRUCT;
@@ -377,6 +418,9 @@ static Type* structDecl(Token** Rest, Token* Tok) {
   }
   Ty->Size = alignTo(Offset, Ty->Align);
   *Rest = Tok;
+    // 如果有名称就注册结构体类型
+  if (Tag)
+    pushTagScope(Tag, Ty);
   return Ty;
 }
 
