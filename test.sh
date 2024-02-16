@@ -66,7 +66,11 @@ assert() {
 #assert 47 '5+6*7'
 #assert 15 '5*(9-6)'
 #assert 17 '1-8/(2*2)+3*6'
-
+#50 对齐结构体成员变量
+  assert 24 'int main() { struct {char a; int b;char c;} x;return sizeof(x); }'
+  assert 16 'int main() { struct {char a; char b;int c;} x;return sizeof(x); }'
+  assert 16 'int main() { struct {char a; int b;} x;return sizeof(x); }'
+  assert 16 'int main() {struct {int a; char b;} x;return sizeof(x); }'
   # [48] 支持 , 运算符
   assert 3 'int main() { return (1,2,3); }' 
   assert 5 'int main() { int i=2, j=3; (i=5,j)=6; i; return i; }'
@@ -95,7 +99,7 @@ assert() {
   assert 32 'int main() { struct {int a;} x[4];return sizeof(x); }'
   assert 48 'int main() { struct {int a[3];} x[2];return sizeof(x); }'
   assert 2 'int main() { struct {char a; char b;} x;return sizeof(x); }'
-  assert 9 'int main() { struct {char a; int b;} x;return sizeof(x); }'
+
   assert 0 'int main() { struct {} x;return sizeof(x); }'
 
 # [44] 处理域

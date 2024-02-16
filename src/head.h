@@ -162,6 +162,7 @@ struct Type
 {
   TypeKind Kind; // 种类
   int Size;      // 大小, sizeof返回的值
+  int Align;     // 对齐
   Type* Base;    // 指向的类型
 
   // 数组
@@ -172,8 +173,8 @@ struct Type
   Type* ReturnTy; // 函数返回的类型
   Type* Params;   // 形参
   Type* Next;     // 下一类型
-    // 结构体
-  Member *Mems;
+  // 结构体
+  Member* Mems;
 };
 // 结构体成员
 struct Member {
@@ -211,5 +212,5 @@ Obj* parse(Token* Tok);
 
 // 代码生成入口函数
 void codegen(Obj* Prog, FILE* Out);
-
+int alignTo(int N, int Align);
 #endif
