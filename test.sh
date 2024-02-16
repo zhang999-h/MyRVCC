@@ -66,6 +66,12 @@ assert() {
 #assert 47 '5+6*7'
 #assert 15 '5*(9-6)'
 #assert 17 '1-8/(2*2)+3*6'
+
+#'int main() { return }'
+# [51] 对齐局部变量
+  
+  assert 1 'int main() { int x; char y; int z; char *a=&y; char *b=&z; return b-a;}'
+  assert 15 'int main() { int x; int y; char z; char *a=&y; char *b=&z;  return b-a; }'
 #50 对齐结构体成员变量
   assert 24 'int main() { struct {char a; int b;char c;} x;return sizeof(x); }'
   assert 16 'int main() { struct {char a; char b;int c;} x;return sizeof(x); }'

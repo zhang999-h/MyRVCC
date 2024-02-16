@@ -789,7 +789,7 @@ static Node* newSub(Node* LHS, Node* RHS, Token* Tok) {
   if (LHS->Ty->Base && RHS->Ty->Base) {
     Node* Nd = newBinary(ND_SUB, LHS, RHS, Tok);
     Nd->Ty = &TyInt;
-    return newBinary(ND_DIV, Nd, newNum(8, Tok), Tok);
+    return newBinary(ND_DIV, Nd, newNum(LHS->Ty->Base->Size, Tok), Tok);
   }
 
   errorTok(Tok, "invalid operands");

@@ -103,7 +103,7 @@ static void genAddr(Node* Nd) {
         genExpr(Nd->LHS);
         genAddr(Nd->RHS);
         return;
-    // 结构体成员
+        // 结构体成员
     case ND_MEMBER:
         genAddr(Nd->LHS);
         printLn("  # 计算成员变量的地址偏移量");
@@ -122,6 +122,8 @@ static void assignLVarOffsets(Obj* Prog) {
     for (Obj* Var = Prog->Locals; Var; Var = Var->Next) {
         // 每个变量分配8字节
         Offset += Var->Ty->Size;
+        // 对齐变量
+        Offset = alignTo(Offset, Var->Ty->Align);
         // 为每个变量赋一个偏移量，或者说是栈中地址
         Var->Offset = -Offset;
     }
