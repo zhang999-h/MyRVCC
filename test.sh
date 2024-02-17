@@ -67,7 +67,14 @@ assert() {
 #assert 15 '5*(9-6)'
 #assert 17 '1-8/(2*2)+3*6'
 
-#    'int main() { return }'
+#    'int main() { return  ;}'
+
+  #[54] 支持union
+  assert 8 'int main() { return ({ union { int a; char b[6]; } x; sizeof(x); });}'
+  assert 3 'int main() { return ({ union { int a; char b[4]; } x; x.a = 515; x.b[0]; });}'
+  assert 2 'int main() { return ({ union { int a; char b[4]; } x; x.a = 515; x.b[1]; });}'
+  assert 0 'int main() { return ({ union { int a; char b[4]; } x; x.a = 515; x.b[2]; });}'
+  assert 0 'int main() { return ({ union { int a; char b[4]; } x; x.a = 515; x.b[3]; });}'
   # [53] 支持->操作符
   assert 3 'int main() { return ({ struct t {char a;} x; struct t *y = &x; x.a=3; y->a; });}' ;
   assert 3 'int main() { return ({ struct t {char a;} x; struct t *y = &x; y->a=3; x.a; });}' ;
