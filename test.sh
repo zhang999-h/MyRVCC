@@ -1,6 +1,6 @@
 #!/bin/bash
 cd build
-  make
+  ninja
   cd ..
 
 
@@ -69,6 +69,15 @@ assert() {
 
 #    'int main() { return  ;}'
 
+
+  # [55] 支持结构体赋值 //结构体赋值应该把内容也拷贝过去  TODO：不同结构体类型赋值判断
+  assert 3 'int main() { return  ({ struct {int a,b;} x,y; x.a=3; y=x; y.a; });}'
+  assert 7 'int main() { return  ({ struct t {int a,b;}; struct t x; x.a=7; struct t y; struct t *z=&y; *z=x; y.a; });}'
+  assert 7 'int main() { return  ({ struct t {int a,b;}; struct t x; x.a=7; struct t y, *p=&x, *q=&y; *q=*p; y.a; });}'
+  assert 5 'int main() { return  ({ struct t {char a, b;} x, y; x.a=5; y=x; y.a; });}'
+  assert 3 'int main() { return  ({ union {int a,b;} x,y; x.a=3; y.a=5; y=x; y.a; });}'
+  assert 5 'int main() { return  ({ struct t {struct {int a;} ta;} x, y; x.ta.a=5; y=x; y.ta.a; });}'
+  assert 3 'int main() { return  ({ union {struct {int a,b;} c;} x,y; x.c.b=3; y.c.b=5; y=x; y.c.b; });}'
   #[54] 支持union
   assert 8 'int main() { return ({ union { int a; char b[6]; } x; sizeof(x); });}'
   assert 3 'int main() { return ({ union { int a; char b[4]; } x; x.a = 515; x.b[0]; });}'
