@@ -69,7 +69,9 @@ assert() {
 
 #    'int main() { return  ;}'
 
-
+  # [56] 将int的大小由8改为4
+  assert 4 'int main() { return ({ int x; sizeof(x); }) ;}'
+  assert 4 'int main() { return ({ int x; sizeof x; }) ;}'
   # [55] 支持结构体赋值 //结构体赋值应该把内容也拷贝过去  TODO：不同结构体类型赋值判断
   assert 3 'int main() { return  ({ struct {int a,b;} x,y; x.a=3; y=x; y.a; });}'
   assert 7 'int main() { return  ({ struct t {int a,b;}; struct t x; x.a=7; struct t y; struct t *z=&y; *z=x; y.a; });}'
@@ -88,19 +90,27 @@ assert() {
   assert 3 'int main() { return ({ struct t {char a;} x; struct t *y = &x; x.a=3; y->a; });}' ;
   assert 3 'int main() { return ({ struct t {char a;} x; struct t *y = &x; y->a=3; x.a; });}' ;
   #[52] 支持结构体标签
-  assert 16 'int main() { struct t {int a; int b;} x; struct t y;  return sizeof(y);}'
-  assert 16 'int main() {struct t {int a; int b;}; struct t y;  return sizeof(y);}'
+  assert 8 'int main() { struct t {int a; int b;} x; struct t y;  return sizeof(y);}'
+  assert 8 'int main() {struct t {int a; int b;}; struct t y;  return sizeof(y);}'
   assert 2 'int main() { return ({ struct t {char a[2];}; { struct t {char a[4];}; } struct t y; sizeof(y); }); }'
   assert 3 'int main() { return ({ struct t {int x;}; int t=1; struct t y; y.x=2; t+y.x; }) ;}'
 
 # [51] 对齐局部变量
   assert 1 'int main() { int x; char y; int z; char *a=&y; char *b=&z; return b-a;}'
-  assert 15 'int main() { int x; int y; char z; char *a=&y; char *b=&z;  return b-a; }'
+  assert 7 'int main() { int x; int y; char z; char *a=&y; char *b=&z;  return b-a; }'
+# important:
+# 变量对齐 (rvcc中变量后来局上)
+# -1  z
+# -2  ...
+# -8  y
+# ...
+# -16 x
+
 #50 对齐结构体成员变量
-  assert 24 'int main() { struct {char a; int b;char c;} x;return sizeof(x); }'
-  assert 16 'int main() { struct {char a; char b;int c;} x;return sizeof(x); }'
-  assert 16 'int main() { struct {char a; int b;} x;return sizeof(x); }'
-  assert 16 'int main() {struct {int a; char b;} x;return sizeof(x); }'
+  assert 12 'int main() { struct {char a; int b;char c;} x;return sizeof(x); }'
+  assert 8 'int main() { struct {char a; char b;int c;} x;return sizeof(x); }'
+  assert 8 'int main() { struct {char a; int b;} x;return sizeof(x); }'
+  assert 8 'int main() {struct {int a; char b;} x;return sizeof(x); }'
   # [48] 支持 , 运算符
   assert 3 'int main() { return (1,2,3); }' 
   assert 5 'int main() { int i=2, j=3; (i=5,j)=6; i; return i; }'
@@ -122,12 +132,12 @@ assert() {
 
   assert 6 'int main() { struct { struct { char b; } a; } x; x.a.b=6;return x.a.b; }'
 
-  assert 8 'int main() { struct {int a;} x;return sizeof(x); }'
-  assert 16 'int main() { struct {int a; int b;} x;return sizeof(x); }'
-  assert 16 'int main() { struct {int a, b;} x;return sizeof(x); }'
-  assert 24 'int main() { struct {int a[3];} x;return sizeof(x); }'
-  assert 32 'int main() { struct {int a;} x[4];return sizeof(x); }'
-  assert 48 'int main() { struct {int a[3];} x[2];return sizeof(x); }'
+  assert 4 'int main() { struct {int a;} x;return sizeof(x); }'
+  assert 8 'int main() { struct {int a; int b;} x;return sizeof(x); }'
+  assert 8 'int main() { struct {int a, b;} x;return sizeof(x); }'
+  assert 12 'int main() { struct {int a[3];} x;return sizeof(x); }'
+  assert 16 'int main() { struct {int a;} x[4];return sizeof(x); }'
+  assert 24 'int main() { struct {int a[3];} x[2];return sizeof(x); }'
   assert 2 'int main() { struct {char a; char b;} x;return sizeof(x); }'
 
   assert 0 'int main() { struct {} x;return sizeof(x); }'
@@ -279,17 +289,17 @@ assert 3 'int main() { int x[2][3]; int *y=x; y[3]=3; return x[1][0]; }'
 assert 4 'int main() { int x[2][3]; int *y=x; y[4]=4; return x[1][1]; }'
 assert 5 'int main() { int x[2][3]; int *y=x; y[5]=5; return x[1][2]; }'
 # [30] 支持 sizeof
-assert 8 'int main() { int x; return sizeof(x); }'
-assert 8 'int main() { int x; return sizeof x; }'
+assert 4 'int main() { int x; return sizeof(x); }'
+assert 4 'int main() { int x; return sizeof x; }'
 assert 8 'int main() { int *x; return sizeof(x); }'
-assert 32 'int main() { int x[4]; return sizeof(x); }'
-assert 96 'int main() { int x[3][4]; return sizeof(x); }'
-assert 32 'int main() { int x[3][4]; return sizeof(*x); }'
-assert 8 'int main() { int x[3][4]; return sizeof(**x); }'
-assert 9 'int main() { int x[3][4]; return sizeof(**x) + 1; }'
-assert 9 'int main() { int x[3][4]; return sizeof **x + 1; }'
-assert 8 'int main() { int x[3][4]; return sizeof(**x + 1); }'
-assert 8 'int main() { int x=1; return sizeof(x=2); }'
+assert 16 'int main() { int x[4]; return sizeof(x); }'
+assert 48 'int main() { int x[3][4]; return sizeof(x); }'
+assert 16 'int main() { int x[3][4]; return sizeof(*x); }'
+assert 4 'int main() { int x[3][4]; return sizeof(**x); }'
+assert 5 'int main() { int x[3][4]; return sizeof(**x) + 1; }'
+assert 5 'int main() { int x[3][4]; return sizeof **x + 1; }'
+assert 4 'int main() { int x[3][4]; return sizeof(**x + 1); }'
+assert 4 'int main() { int x=1; return sizeof(x=2); }'
 assert 1 'int main() { int x=1; sizeof(x=2); return x; }'
 
 #[31] 全局变量不属于任何函数，但是全局变量可以在函数外初始化，
@@ -305,8 +315,8 @@ assert 1 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[1]; }'
 assert 2 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[2]; }'
 assert 3 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }'
 
-assert 8 'int x; int main() { return sizeof(x); }'
-assert 32 'int x[4]; int main() { return sizeof(x); }'
+assert 4 'int x; int main() { return sizeof(x); }'
+assert 16 'int x[4]; int main() { return sizeof(x); }'
 
 # [33] 支持char类型
 assert 1 'int main() { char x=1; return x; }'

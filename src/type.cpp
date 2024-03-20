@@ -1,7 +1,7 @@
 #include "head.h"
 
 // (Type){...}构造了一个复合字面量，相当于Type的匿名变量。
-Type TyInt = { TY_INT, 8 ,8 };
+Type TyInt = { TY_INT, 4 ,4 };
 Type TyChar = { TY_CHAR, 1 ,1 };
 
 static Type* newType(TypeKind Kind, int Size, int Align) {

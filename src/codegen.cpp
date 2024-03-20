@@ -55,6 +55,8 @@ static void load(Type* Ty) {
     printLn("  # 读取a0中存放的地址，得到的值存入a0");
     if (Ty->Size == 1)
         printLn("  lb a0, 0(a0)");
+    else if (Ty->Size == 4)
+        printLn("  lw a0, 0(a0)");
     else
         printLn("  ld a0, 0(a0)");
 }
@@ -78,6 +80,8 @@ static void store(Type* Ty) {
     printLn("  # 将a0的值，写入到a1中存放的地址");
     if (Ty->Size == 1)
         printLn("  sb a0, 0(a1)");
+    else if (Ty->Size == 4)
+        printLn("  sw a0, 0(a1)");
     else
         printLn("  sd a0, 0(a1)");
 };
@@ -87,6 +91,22 @@ int alignTo(int N, int Align) {
     return (N + Align - 1) / Align * Align;
 }
 
+// 将整形寄存器的值存入栈中
+static void storeGeneral(int Reg, int Offset, int Size) {
+  printLn("  # 将%s寄存器的值存入%d(fp)的栈地址", ArgReg[Reg], Offset);
+  switch (Size) {
+  case 1:
+    printLn("  sb %s, %d(fp)", ArgReg[Reg], Offset);
+    return;
+  case 4:
+    printLn("  sw %s, %d(fp)", ArgReg[Reg], Offset);
+    return;
+  case 8:
+    printLn("  sd %s, %d(fp)", ArgReg[Reg], Offset);
+    return;
+  }
+  unreachable();
+}
 // 计算给定节点的绝对地址
 // 如果报错，说明节点不在内存中
 static void genAddr(Node* Nd) {
@@ -133,7 +153,7 @@ static void assignLVarOffsets(Obj* Prog) {
     int Offset = 0;
     // 读取所有变量
     for (Obj* Var = Prog->Locals; Var; Var = Var->Next) {
-        // 每个变量分配8字节
+        // 每个变量分配
         Offset += Var->Ty->Size;
         // 对齐变量
         Offset = alignTo(Offset, Var->Ty->Align);
@@ -506,13 +526,7 @@ void emitText(Obj* Prog)
 
         int I = 0;
         for (Obj* Var = Fn->Params; Var; Var = Var->Next)
-        {
-            printLn("  # 将%s寄存器的值存入%s的栈地址", ArgReg[I], Var->Name);
-            if (Var->Ty->Size == 1)
-                printLn("  sb %s, %d(fp)", ArgReg[I++], Var->Offset);
-            else
-                printLn("  sd %s, %d(fp)", ArgReg[I++], Var->Offset);
-        }
+            storeGeneral(I++, Var->Offset, Var->Ty->Size);
 
         // 生成语句链表的代码
         printLn("\n# =====%s段主体===============", Fn->Name);

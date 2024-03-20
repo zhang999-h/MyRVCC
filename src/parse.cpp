@@ -852,7 +852,7 @@ static Node* newSub(Node* LHS, Node* RHS, Token* Tok) {
   // ptr - num
   if (LHS->Ty->Base && isInteger(RHS->Ty))
   {
-    RHS = newBinary(ND_MUL, RHS, newNum(LHS->Ty->Size, Tok), Tok);
+    RHS = newBinary(ND_MUL, RHS, newNum(LHS->Ty->Base->Size, Tok), Tok);
     addType(RHS);
     Node* Nd = newBinary(ND_SUB, LHS, RHS, Tok);
     // 节点类型为指针
