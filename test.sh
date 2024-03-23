@@ -68,7 +68,15 @@ assert() {
 #assert 17 '1-8/(2*2)+3*6'
 
 #    'int main() { return  ;}'
-
+  # [57] 支持long类型
+  assert  6   '
+  int sub_long(long a, long b, long c) {
+    return a - b - c;
+  }
+  int main() {long x=9,y=1,z=2; return sub_long(x,y,z);}
+  '
+  assert 16 'int main() { return  ({ struct {char a; long b;} x; sizeof(x); });}'
+  assert 8 'int main() { return ({ long x; sizeof(x); }) ;}'
   # [56] 将int的大小由8改为4
   assert 4 'int main() { return ({ int x; sizeof(x); }) ;}'
   assert 4 'int main() { return ({ int x; sizeof x; }) ;}'

@@ -135,7 +135,7 @@ static Node* newUnary(NodeKind Kind, Node* Expr, Token* Tok)
 }
 
 // 新建一个数字节点
-static Node* newNum(int Val, Token* Tok)
+static Node* newNum(int64_t Val, Token* Tok)
 {
   Node* Nd = newNode(ND_NUM, Tok);
   Nd->Val = Val;
@@ -228,7 +228,7 @@ static void createParamLVars(Type* Param)
 
 // program = (functionDefinition | globalVariable)*
 // functionDefinition = declspec declarator compoundStmt*
-// declspec = "int" | "char" | structDecl | unionDecl
+// declspec = "int" | "char" |"long" | structDecl | unionDecl
 // declarator = "*"* ident typeSuffix
 // typeSuffix = funcParams| ("[" num "]")* | ε
 // funcParams = "(" (param ("," param)*)* ")"
@@ -318,7 +318,7 @@ static Token* function(Token* Tok, Type* BaseTy)
   return Tok;
 }
 
-// declspec = "int" | "char" | structDecl  | unionDecl
+// declspec = "int" | "char" |"long" | structDecl  | unionDecl
 // declarator specifier
 static Type* declspec(Token** Rest, Token* Tok)
 {
@@ -333,6 +333,11 @@ static Type* declspec(Token** Rest, Token* Tok)
   {
     *Rest = Tok->Next;
     return &TyInt;
+  }
+    // "long"
+  if (equal(Tok, "long")) {
+    *Rest = Tok->Next;
+    return &TyLong;
   }
   //structDecl
   if (equal(Tok, "struct"))
@@ -653,7 +658,7 @@ static Node* stmt(Token** Rest, Token* Tok)
 static bool isTypename(Token* Tok)
 {
   return equal(Tok, "char") || equal(Tok, "int") || equal(Tok, "struct")
-    || equal(Tok, "union");
+    || equal(Tok, "union")|| equal(Tok, "long");
 }
 
 // 解析复合语句

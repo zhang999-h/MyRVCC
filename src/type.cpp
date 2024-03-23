@@ -3,7 +3,7 @@
 // (Type){...}构造了一个复合字面量，相当于Type的匿名变量。
 Type TyInt = { TY_INT, 4 ,4 };
 Type TyChar = { TY_CHAR, 1 ,1 };
-
+Type TyLong = { TY_LONG, 8 ,8 };
 static Type* newType(TypeKind Kind, int Size, int Align) {
   Type* Ty = (Type*)calloc(1, sizeof(Type));
   Ty->Kind = Kind;
@@ -12,7 +12,10 @@ static Type* newType(TypeKind Kind, int Size, int Align) {
   return Ty;
 }
 // 判断Type是否为int类型
-bool isInteger(Type* Ty) { return Ty->Kind == TY_INT || Ty->Kind == TY_CHAR; }
+bool isInteger(Type* Ty) {
+  return  Ty->Kind == TY_INT || 
+          Ty->Kind == TY_CHAR || Ty->Kind == TY_LONG;
+}
 
 // 指针类型，并且指向基类
 Type* pointerTo(Type* Base)
@@ -100,7 +103,7 @@ void addType(Node* Nd)
     // case ND_VAR:
   case ND_NUM:
   case ND_FUNCALL:
-    Nd->Ty = &TyInt;
+    Nd->Ty = &TyLong;
     return;
     // 将节点类型设为 变量的类型
   case ND_VAR:

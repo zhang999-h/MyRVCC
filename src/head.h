@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>//用来int64_t
 
 extern char* CurrentInput; // 用来存储输入
 extern char* CurrentFilename;
@@ -36,7 +37,7 @@ struct Token
 {
   TokenKind Kind; // 种类
   Token* Next;    // 指向下一终结符
-  int Val;        // 值
+  int64_t Val;    // TK_NUM值
   char* Loc;      // 在解析的字符串内的位置
   int Len;        // 长度
   Type* Ty;       // TK_STR使用
@@ -118,7 +119,7 @@ struct Node
   Node* RHS; // 右部，right-hand side
   // char Name;     // 存储ND_VAR的字符串
   Obj* Var; // 存储ND_VAR种类的变量
-  int Val;  // 存储ND_NUM种类的值
+  int64_t Val;  // 存储ND_NUM种类的值
   // 代码块
   Node* Body;
   // "if"语句
@@ -153,6 +154,7 @@ typedef enum
 {
   TY_CHAR,  // char字符类型
   TY_INT,   // int整型
+  TY_LONG, // long长整型
   TY_PTR,   // 指针
   TY_FUNC,  // 函数
   TY_ARRAY, // 数组
@@ -188,7 +190,7 @@ struct Member {
 // 声明全局变量，定义在type.c中。
 extern Type TyInt;
 extern Type TyChar;
-
+extern Type TyLong;
 // 判断是否为整型
 bool isInteger(Type* TY);
 // 为节点内的所有节点添加类型
